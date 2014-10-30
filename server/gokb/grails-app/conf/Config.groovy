@@ -26,7 +26,25 @@ identifiers.class_ones = [
 
 project_dir = new java.io.File(org.codehaus.groovy.grails.io.support.GrailsResourceUtils.GRAILS_APP_DIR + "/../project-files/").getCanonicalPath() + "/"
 
-refine_min_version = "3.1"
+refine_min_version = "3.0.0"
+
+// Config for the refine extension build process.
+refine = [
+  refineRepoURL       : "https://github.com/OpenRefine/OpenRefine.git",
+  refineRepoBranch    : "master",
+  refineRepoTagPattern: /\Q2.6-beta.1\E/,
+  refineRepoPath      : "gokb-build/refine",
+  gokbRepoURL         : "https://github.com/k-int/gokb-phase1.git",
+  gokbRepoBranch      : "release",
+  gokbRepoTagPattern  : /\QCLIENT_\E(.*)/,
+  extensionRepoPath   : "gokb-build/extension",
+  gokbExtensionPath   : "refine/extensions/gokb",
+  gokbExtensionTarget : "extensions/gokb/",
+  refineBuildFile     : "build.xml",
+  refineBuildTarget   : null,
+  extensionBuildFile  : "build.xml",
+  extensionBuildTarget: "dist",
+]
 
 grails.project.groupId = appName // change this to alter the default package name and Maven publishing destination
 grails.mime.file.extensions = true // enables the parsing of file extensions from URLs into the request format
@@ -122,7 +140,9 @@ log4j = {
       'com.k_int',
       'com.k_int.apis',
       'com.k_int.asset.pipeline.groovy',
-      'asset.pipeline.less.compilers'
+      'asset.pipeline.less.compilers',
+      'com.k_int.RefineUtils',
+      'com.k_int.grgit.GitUtils'
 
   //   debug  'org.gokb.DomainClassExtender'
 
@@ -212,25 +232,21 @@ validation.rules = [
   "${IngestService.DATE_FIRST_PACKAGE_ISSUE}" : [
     [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_WARNING ],
     [ type: CellNotEmpty  , severity: A_ValidationRule.SEVERITY_WARNING ],
-    [ type: EnsureDate    , severity: A_ValidationRule.SEVERITY_ERROR ]
+    [ type: EnsureDate    ,severity: A_ValidationRule.SEVERITY_ERROR ]
   ],
 
   "${IngestService.DATE_LAST_PACKAGE_ISSUE}" : [
     [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_WARNING ],
-    [ type: EnsureDate    , severity: A_ValidationRule.SEVERITY_ERROR ]
+    [ 
+      type: EnsureDate,
+      severity: A_ValidationRule.SEVERITY_ERROR,
+      args: ["value.gokbDateCeiling()"]
+    ]
   ],
 
   "${IngestService.PACKAGE_NAME}" : [
     [ type: ColumnMissing , severity: A_ValidationRule.SEVERITY_ERROR ],
     [ type: CellNotEmpty  , severity: A_ValidationRule.SEVERITY_ERROR ],
-    //    [
-    //      type: IsSimilar,
-    //      severity: A_ValidationRule.SEVERITY_WARNING,
-    //      args: [
-    //        org.gokb.cred.Package,
-    //        9
-    //      ]
-    //    ]
     [
       type: LookedUpValue,
       severity: A_ValidationRule.SEVERITY_ERROR,
@@ -403,6 +419,24 @@ validation.rules = [
         "if (and (isNonBlank(value), value.match(/${validation.regex.isbn}/) == null), 'invalid', null)",
       ]
     ],
+  ],
+
+
+  // Other columns we know about that need warnings if not present.
+  "${IngestService.VOLUME_FIRST_PACKAGE_ISSUE}" : [
+    [ type: ColumnMissing, severity: A_ValidationRule.SEVERITY_WARNING ],
+  ],
+
+  "${IngestService.VOLUME_LAST_PACKAGE_ISSUE}" : [
+    [ type: ColumnMissing, severity: A_ValidationRule.SEVERITY_WARNING ],
+  ],
+
+  "${IngestService.NUMBER_FIRST_PACKAGE_ISSUE}" : [
+    [ type: ColumnMissing, severity: A_ValidationRule.SEVERITY_WARNING ],
+  ],
+
+  "${IngestService.NUMBER_LAST_PACKAGE_ISSUE}" : [
+    [ type: ColumnMissing, severity: A_ValidationRule.SEVERITY_WARNING ],
   ],
 ]
 

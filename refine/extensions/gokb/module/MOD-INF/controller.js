@@ -10,6 +10,7 @@ function registerCommands() {
   Packages.java.lang.System.out.print("\tRegistering commands...");
   var RS = Packages.com.google.refine.RefineServlet;
   RS.registerCommand(module, "get-workspaces", new Packages.com.k_int.gokb.refine.commands.GetWorkspaces());
+  RS.registerCommand(module, "get-coredata", new Packages.com.k_int.gokb.refine.commands.GetCoreData());
   RS.registerCommand(module, "set-active-workspace", new Packages.com.k_int.gokb.refine.commands.SetWorkspace());
   RS.registerCommand(module, "project-checkout", new Packages.com.k_int.gokb.refine.commands.CheckOutProject());
   RS.registerCommand(module, "project-checkin", new Packages.com.k_int.gokb.refine.commands.CheckInProject());
@@ -30,7 +31,8 @@ function registerCommands() {
 function registerFunctions() {
 	Packages.java.lang.System.out.print("\tRegistering functions...");
 	registerFunction("ExtractHost", new com.k_int.gokb.refine.functions.ExtractHost());
-	registerFunction("CaseInsensitiveCellLookup", new com.k_int.gokb.refine.functions.CaseInsensitiveCellLookup());
+  registerFunction("CaseInsensitiveCellLookup", new com.k_int.gokb.refine.functions.CaseInsensitiveCellLookup());
+  registerFunction("DateCeiling", new com.k_int.gokb.refine.functions.DateCeiling());
 	Packages.java.lang.System.out.println("done");
 }
 
@@ -94,7 +96,10 @@ function init() {
 		 [
 	     "scripts/plugins/jquery.uniform.min.js",
 	     "scripts/plugins/jquery.ui-lookup.js",
+	     "scripts/plugins/pnotify.custom.min.js",
 	     "scripts/common.js",
+	     "scripts/common-notifications.js",
+	     "scripts/init.js",
 	     "scripts/forms.js",
 	     "scripts/index.js",
 	     "scripts/index/ui-open-project.js",
@@ -108,6 +113,7 @@ function init() {
     [
      "styles/jqui/jquery-ui.css",
      "styles/uniform.aristo.min.css",
+     "styles/pnotify.custom.min.css",
      "styles/common.less",
      "styles/index.less",
     ]
@@ -124,7 +130,10 @@ function init() {
      "scripts/plugins/jquery.contextMenu.js",
      "scripts/plugins/jquery.ui-lookup.js",
      "scripts/plugins/select2.min.js",
+     "scripts/plugins/pnotify.custom.min.js",
      "scripts/common.js",
+     "scripts/common-notifications.js",
+     "scripts/init.js",
      "scripts/forms.js",
      "scripts/project/validation-panel.js",
      "scripts/project/validation-panel-messages.js",
@@ -144,6 +153,7 @@ function init() {
       "styles/uniform.aristo.min.css",
       "styles/jquery.contextMenu.css",
       "styles/select2.css",
+      "styles/pnotify.custom.min.css",
       "styles/common.less",
     ]
   );

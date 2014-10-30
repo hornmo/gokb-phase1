@@ -31,8 +31,6 @@ import org.springframework.context.ApplicationContext
 @Log4j
 abstract class A_Api <T> {
 
-  static String NO_ARGS_METHOD = 'NO_ARGS_METHOD'
-
   protected static final Set<String> EXCLUDES = AbstractGormApi.EXCLUDES + [
     // Extend the list with any that aren't caught here.
   ]
@@ -140,8 +138,15 @@ abstract class A_Api <T> {
                   
                 } else {
                   if (args.length == 1 && args[0] instanceof Object[]) {
-                    // Treat this as the list of parameters.
-                    the_args.addAll(args[0].toList())
+                    // Could be any type of array at this point.
+                    if (args[0].class == Object[].class) {
+                      
+                      // Treat this as an array of parameter.
+                      the_args.addAll(args[0])
+                    } else {
+                      // Treat as only parameter.
+                      the_args.add(args[0])
+                    }
                   } else {
                     the_args.addAll(args.toList())
                   }
@@ -180,10 +185,18 @@ abstract class A_Api <T> {
                   
                 } else {
                   if (args.length == 1 && args[0] instanceof Object[]) {
-                    // Treat this as the list of parameters.
-                    the_args.addAll(args[0].toList())
+                    
+                    // Could be any type of array at this point.
+                    if (args[0].class == Object[].class) {
+                      
+                      // Treat this as an array of parameter.
+                      the_args.addAll(args[0])
+                    } else {
+                      // Treat as only parameter.
+                      the_args.add(args[0])
+                    }
                   } else {
-                    the_args.addAll(args.toList())
+                    the_args.addAll(args)
                   }
                 }
                 

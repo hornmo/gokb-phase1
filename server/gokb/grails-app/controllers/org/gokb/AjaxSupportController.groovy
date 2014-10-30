@@ -312,7 +312,7 @@ class AjaxSupportController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def delete() {
-    log.debug("delete(${params})");
+    log.debug("delete(${params}), referer: ${request.getHeader('referer')}");
     // Adds a link to a collection that is not mapped through a join object
     def contextObj = resolveOID2(params.__context)
     if ( contextObj ) {
@@ -321,7 +321,17 @@ class AjaxSupportController {
     else {
       log.error("Unable to resolve context obj : ${params.__context}");
     }
-    redirect(url: request.getHeader('referer'))
+   
+    def redirect_to = request.getHeader('referer')
+
+    if ( params.redirect ) {
+      redirect_to = params.redirect
+    }
+    else if ( ( params.fragment ) && ( params.fragment.length() > 0 ) ) {
+      redirect_to = "${redirect_to}#${params.fragment}"
+    }
+
+    redirect(url: redirect_to)
   }
 
   def resolveOID2(oid) {
@@ -377,7 +387,7 @@ class AjaxSupportController {
     def target_object = resolveOID2(params.pk)
     if ( target_object ) {
       if ( params.type=='date' ) {
-        target_object."${params.name}" = params.date('value','yyyy-MM-dd')
+        target_object."${params.name}" = params.date('value',params.format ?: 'yyyy-MM-dd')
       }
       else {
         def binding_properties = [:]

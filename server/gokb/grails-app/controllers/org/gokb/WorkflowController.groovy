@@ -175,8 +175,23 @@ class WorkflowController {
                          'select tipp from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status.value <> ? and c.type.value = ?',
                          [title_obj, 'Deleted','TitleInstance.Tipps']);
       tipps.each { tipp ->
+
         log.debug("Add tipp to discontinue ${tipp}");
-        titleChangeData.tipps[tipp.id] = [newtipps:[]]
+
+        titleChangeData.tipps[tipp.id] = [
+          oldTippValue:[
+            title_id:tipp.title.id,
+            package_id:tipp.pkg.id,
+            platform_id:tipp.hostPlatform.id,
+            startDate:tipp.startDate ? sdf.format(tipp.startDate) : null,
+            startVolume:tipp.startVolume,
+            startIssue:tipp.startIssue,
+            endDate:tipp.endDate? sdf.format(tipp.endDate) : null,
+            endVolume:tipp.endVolume,
+            endIssue:tipp.endIssue
+          ],
+          newtipps:[]
+        ]
 
         params.list('afterTitles').each { new_title_oid ->
           def new_title_obj = genericOIDService.resolveOID2(new_title_oid)
@@ -253,7 +268,20 @@ class WorkflowController {
           title_instance.tipps.each { tipp ->
             if ( tipp.status?.value != 'Deleted' ) {
               result.tipps.add(tipp)
-              titleTransferData.tipps[tipp.id] = [newtipps:[]]
+              titleTransferData.tipps[tipp.id] = [
+                oldTippValue:[
+                  title_id:tipp.title.id,
+                  package_id:tipp.pkg.id,
+                  platform_id:tipp.hostPlatform.id,
+                  startDate:tipp.startDate ? sdf.format(tipp.startDate) : null,
+                  startVolume:tipp.startVolume,
+                  startIssue:tipp.startIssue,
+                  endDate:tipp.endDate? sdf.format(tipp.endDate) : null,
+                  endVolume:tipp.endVolume,
+                  endIssue:tipp.endIssue
+                ],
+                newtipps:[]
+              ]
             }
           }
         }
@@ -263,9 +291,10 @@ class WorkflowController {
       }
     }
 
-    log.debug("loaded Title Data");
-
+    log.debug("loaded Title Data.. Looking up publisher");
     result.newPublisher = genericOIDService.resolveOID2(params.title)
+
+    log.debug("Assigning new publisher");
     titleTransferData.newPublisherId = result.newPublisher.id
 
     log.debug("Build title transfer record");
@@ -300,6 +329,7 @@ class WorkflowController {
     // Pull in all updated tipp properties like start volumes, etc.
     request.getParameterNames().each { pn ->
       def value = request.getParameter(pn)
+      log.debug("Checking ${pn} : ${value}");
       if ( pn.startsWith('_tippdata') ) {
         def key_components = pn.split(':');
         if (  activity_data.tipps[key_components[1]] != null ) {
@@ -312,6 +342,18 @@ class WorkflowController {
         }
         else {
           log.error("Unable to locate data for tipp ${key_components[1]} in ${activity_data}");
+        }
+      }
+      else if ( pn.startsWith('_oldtipp') ) {
+        def key_components = pn.split(':');
+
+        if ( activity_data.tipps[key_components[1]].oldTippValue == null ) { activity_data.tipps[key_components[1]].oldTippValue = [:] }
+
+        if ( ( value != null ) && ( value.length() > 0 ) ) {
+          activity_data.tipps[key_components[1]].oldTippValue[key_components[2]] = value
+        }
+        else {
+          activity_data.tipps[key_components[1]].oldTippValue[key_components[2]] = null
         }
       }
     }
@@ -371,6 +413,10 @@ class WorkflowController {
     }
     else if ( params.update ) {
       log.debug("Update...");
+      def builder = new JsonBuilder()
+      builder(activity_data)
+      activity_record.activityData = builder.toString();
+      activity_record.save()
     }
     else if ( params.remove ) {
       log.debug("remove... ${params.remove}");
@@ -423,14 +469,15 @@ class WorkflowController {
                         title:tipp_object.title, 
                         pkg:tipp_object.pkg, 
                         hostPlatform:tipp_object.hostPlatform,
-                        startDate:tipp_object.startDate,
-                        startVolume:tipp_object.startVolume,
-                        startIssue:tipp_object.startIssue,
-                        endDate:tipp_object.endDate,
-                        endVolume:tipp_object.endVolume,
-                        endIssue:tipp_object.endIssue
+                        startDate: tipp_info.value.oldTippValue?.startDate,
+                        startVolume:tipp_info.value.oldTippValue?.startVolume,
+                        startIssue:tipp_info.value.oldTippValue?.startIssue,
+                        endDate:tipp_info.value.oldTippValue?.endDate,
+                        endVolume:tipp_info.value.oldTippValue?.endVolume,
+                        endIssue:tipp_info.value.oldTippValue?.endIssue
                         ])
-      int seq=0;
+      int seq=0;  
+      // .value because tipp_info is a map...
       tipp_info.value.newtipps.each { newtipp_info ->
         result.tipps.add([
                           type:'NEW',
@@ -480,6 +527,18 @@ class WorkflowController {
         }
         else {
           log.error("Unable to locate data for tipp ${key_components[1]} in ${activity_data}");
+        }
+      }
+      else if ( pn.startsWith('_oldtipp') ) {
+        def key_components = pn.split(':');
+
+        if ( activity_data.tipps[key_components[1]].oldTippValue == null ) { activity_data.tipps[key_components[1]].oldTippValue = [:] }
+
+        if ( ( value != null ) && ( value.length() > 0 ) ) {
+          activity_data.tipps[key_components[1]].oldTippValue[key_components[2]] = value
+        }
+        else {
+          activity_data.tipps[key_components[1]].oldTippValue[key_components[2]] = null
         }
       }
     }
@@ -538,12 +597,12 @@ class WorkflowController {
                         title:tipp_object.title, 
                         pkg:tipp_object.pkg, 
                         hostPlatform:tipp_object.hostPlatform,
-                        startDate:tipp_object.startDate,
-                        startVolume:tipp_object.startVolume,
-                        startIssue:tipp_object.startIssue,
-                        endDate:tipp_object.endDate,
-                        endVolume:tipp_object.endVolume,
-                        endIssue:tipp_object.endIssue
+                        startDate: tipp_info.value.oldTippValue?.startDate,
+                        startVolume:tipp_info.value.oldTippValue?.startVolume,
+                        startIssue:tipp_info.value.oldTippValue?.startIssue,
+                        endDate:tipp_info.value.oldTippValue?.endDate,
+                        endVolume:tipp_info.value.oldTippValue?.endVolume,
+                        endIssue:tipp_info.value.oldTippValue?.endIssue
                         ])
       int seq=0;
       tipp_info.value.newtipps.each { newtipp_info ->
@@ -576,6 +635,9 @@ class WorkflowController {
     def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
 
     activity_data.tipps.each { tipp_map_entry ->
+
+      def current_tipp = TitleInstancePackagePlatform.get(tipp_map_entry.key)
+
       tipp_map_entry.value.newtipps.each { newtipp ->
         log.debug("Process new tipp : ${newtipp}");
 
@@ -616,19 +678,19 @@ class WorkflowController {
 
 
     // Default to today if not set
-    def event_date = activityData.eventDate ?: sdf.format(new Date());
+    def event_date = activity_data.eventDate ?: sdf.format(new Date());
 
     // Create title history event
     def newTitleHistoryEvent = new ComponentHistoryEvent(eventDate:sdf.parse(event_date)).save()
 
-    activityData.afterTitles?.each { at ->
+    activity_data.afterTitles?.each { at ->
       def component = genericOIDService.resolveOID2(at)
       def after_participant = new ComponentHistoryEventParticipant (event:newTitleHistoryEvent,
                                                                     participant:component,
                                                                     participantRole:'out').save()
     }
 
-    activityData.beforeTitles?.each { bt ->
+    activity_data.beforeTitles?.each { bt ->
       def component = genericOIDService.resolveOID2(bt)
       def after_participant = new ComponentHistoryEventParticipant (event:newTitleHistoryEvent,
                                                                     participant:component,
@@ -921,10 +983,12 @@ class WorkflowController {
     }
 
     try {
-      response.setHeader("Content-disposition", "attachment; filename=${filename}")
+      response.setHeader("Content-disposition", "attachment;filename=${filename}")
       response.contentType = "text/tsv"
       def out = response.outputStream
       out.withWriter { writer ->
+        
+        def sanitize = { it ? "${it}".trim() : "" }
 
         packages_to_export.each { pkg ->
 
@@ -945,18 +1009,18 @@ class WorkflowController {
 
           tipps.each { tipp_id ->
             TitleInstancePackagePlatform tipp = TitleInstancePackagePlatform.get(tipp_id)
-            writer.write( tipp.id + '\t' + tipp.url + '\t' + tipp.title.id + '\t' + tipp.title.name + '\t' +
-                          tipp.status.value + '\t' + tipp.title.getCurrentPublisher?.name + '\t' + tipp.title.imprint?.name + '\t' + tipp.title.publishedFrom + '\t' +
-                          tipp.title.publishedTo + '\t' + tipp.title.medium?.value + '\t' + tipp.title.oa?.status + '\t' +
-                          tipp.title.continuingSeries?.value + '\t' + 
-                          'SteveToFix\t' + // tipp.title.getIdentifierValue('ISSN') + '\t' +
-                          'SteveToFix\t' + //tipp.title.getIdentifierValue('eISSN') + '\t' 
-                          pkg.name + '\t' + pkg.id + '\t' + '\t' + tipp.hostPlatform.name + '\t' +
-                          tipp.hostPlatform.primaryUrl + '\t' + tipp.hostPlatform.id + '\t\t' + tipp.status?.value + '\t' + tipp.accessStartDate  + '\t' +
-                          tipp.accessEndDate + '\t' + tipp.startDate + '\t' + tipp.startVolume + '\t' + tipp.startIssue + '\t' + tipp.endDate + '\t' +
-                          tipp.endVolume + '\t' + tipp.endIssue + '\t' + tipp.embargo + '\t' + tipp.coverageNote + '\t' + tipp.hostPlatform.primaryUrl + '\t' +
-                          tipp.format?.value + '\t' + tipp.paymentType?.value + '\t' + tipp.delayedOA?.value + '\t' + tipp.delayedOAEmbargo + '\t' +
-                          tipp.hybridOA?.value + '\t' + tipp.hybridOAUrl +
+            writer.write( sanitize( tipp.id ) + '\t' + sanitize( tipp.url ) + '\t' + sanitize( tipp.title.id ) + '\t' + sanitize( tipp.title.name ) + '\t' +
+                          sanitize( tipp.status.value ) + '\t' + sanitize( tipp.title.getCurrentPublisher()?.name ) + '\t' + sanitize( tipp.title.imprint?.name ) + '\t' + sanitize( tipp.title.publishedFrom ) + '\t' +
+                          sanitize( tipp.title.publishedTo ) + '\t' + sanitize( tipp.title.medium?.value ) + '\t' + sanitize( tipp.title.oa?.status ) + '\t' +
+                          sanitize( tipp.title.continuingSeries?.value ) + '\t' + 
+                          '\t' + sanitize( tipp.title.getIdentifierValue('ISSN') ) + '\t' +
+                          '\t' + sanitize( tipp.title.getIdentifierValue('eISSN') ) + '\t' +
+                          sanitize( pkg.name ) + '\t' + sanitize( pkg.id ) + '\t' + '\t' + sanitize( tipp.hostPlatform.name ) + '\t' +
+                          sanitize( tipp.hostPlatform.primaryUrl ) + '\t' + sanitize( tipp.hostPlatform.id ) + '\t\t' + sanitize( tipp.status?.value ) + '\t' + sanitize( tipp.accessStartDate )  + '\t' +
+                          sanitize( tipp.accessEndDate ) + '\t' + sanitize( tipp.startDate ) + '\t' + sanitize( tipp.startVolume ) + '\t' + sanitize( tipp.startIssue ) + '\t' + sanitize( tipp.endDate ) + '\t' +
+                          sanitize( tipp.endVolume ) + '\t' + sanitize( tipp.endIssue ) + '\t' + sanitize( tipp.embargo ) + '\t' + sanitize( tipp.coverageNote ) + '\t' + sanitize( tipp.hostPlatform.primaryUrl ) + '\t' +
+                          sanitize( tipp.format?.value ) + '\t' + sanitize( tipp.paymentType?.value ) + '\t' + sanitize( tipp.delayedOA?.value ) + '\t' + sanitize( tipp.delayedOAEmbargo ) + '\t' +
+                          sanitize( tipp.hybridOA?.value ) + '\t' + sanitize( tipp.hybridOAUrl ) +
                           '\n');
             tipp.discard();
           }

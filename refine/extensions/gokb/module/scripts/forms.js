@@ -48,54 +48,94 @@ GOKb.forms.build = function(name, def, action, attr, validate) {
 	// The form element.
 	var theForm = $('<form />').attr({"id" : name, "name" : (name)});
 	
+	// Add the action if it is not a function or false.
+	if (action != false && !$.isFunction(action)) {
+	  theForm.attr("action", action);
+	}
+	
 	var submitFunction = function (callback) {
+	  
+	  // The deferred ovbject to listen for when form submission has succeeded.
+	  var listener = $.Deferred();
 		
 		// Always store the values.
-		GOKb.forms.saveValues(theForm);
+		var saving = GOKb.forms.saveValues(theForm);
 		
-		if (!validate || !$.isFunction(validate) || validate(theForm)) {
-			
-			// Check for callback.
-			if (callback && $.isFunction(callback)) {
-				
-				// Default behaviour to deny submission as callback handles,
-				// the data instead.
-				return (callback() == true);
-			}
-			
-			// We have no callback and either we don't have a validation method,
-			// or validation has succeeded.
-			return (callback != false);
-		}
+		// Saving flag, is a deferred object.
+		saving.done(function() {
 		
-		// As validation failed and there is no callback method.
-		return false;
+		  // Successfully saved values in local storage.
+  		if (!validate || !$.isFunction(validate) || validate(theForm)) {
+  			
+  			// Check for callback.
+  			if (callback && $.isFunction(callback) && callback() == true) {
+  				
+  				// Default behaviour to deny submission as callback handles,
+  				// the data instead.
+  				listener.resolveWith(theForm);
+  				
+  			} else if (callback != false) {
+  			  listener.resolveWith(theForm);
+  			} else {
+  			  listener.rejectWith(theForm);
+  			}
+  		} else {
+  		  
+  	    // As validation failed and there is no callback method.
+        listener.rejectWith(theForm);
+  		}
+		});
+		
+		return listener;
 	};
 	
-	// Add the correct submit behaviour.
-	if (action == false || $.isFunction(action)) {
-		// Need to add on submit...
-		theForm.submit(function(e) {
-			if (!submitFunction(action)) {
-				e.preventDefault();
-				return false;
-			}
-			
-			return true;
-		});
-	} else {
-		// set the action parameter..
-		theForm.submit(function(e) {
-			
-			if (!submitFunction()) {
-				e.preventDefault();
-				return false;
-			}
-			
-			return true;
-		});
-		theForm.attr("action", action);
-	}
+  // Create a new submit handler that submits the form via AJAX.
+  var submitHandler = function(e) {
+    
+    var listener;
+    
+    // Always prevent the default. as we will do the submission in the background.
+	  e.preventDefault();
+	  
+    if (action == false || $.isFunction(action)) {
+      listener = submitFunction(action);
+    } else {
+      listener = submitFunction();
+    }
+    
+    // Append the callbacks.
+    listener.done(function() {
+      
+      // The context is the form.
+      var f = $(this);
+      var action = f.attr("action");
+      
+      if (action != null) {
+        
+        // Grab the method.
+        var method = f.attr("method");
+        
+        // Default the method to a post.
+        method = method == null ? "post" : method;
+      
+        // Form needs to be submitted.
+        $[method](action, f.serialize(), function(data){
+          // Show something of success or failure.
+          if ("code" in data && data.code == "success" && "redirect" in data) {
+            window.location = data.redirect;
+          }
+        });
+      }
+      
+    });
+    listener.fail(function(form) {
+      // Do not submit the form.
+      window.console.log("Form wasn't submitted");
+    });
+  };
+  
+	// Need to add on submit...
+	theForm.submit(submitHandler);
 	
 	// Add any custom attributes supplied.
 	if (attr) theForm.attr(attr);
@@ -125,7 +165,7 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 		var add_to = null;
 		
 		// Add the element based on the def.
-		var	elem, opts;
+		var	elem;
 		switch (def.type) {
 			case 'select' :
 				elem = $("<select />");
@@ -184,7 +224,7 @@ GOKb.forms.addDefinedElement = function (theForm, parent, def) {
 		// Add any attributes.
 		var attr = def.attr || {};
 		if (def.name) {
-			attr = $.extend(attr, {id : def.name, name : def.name})
+			attr = $.extend(attr, {id : def.name, name : def.name});
 		}
 		elem.attr(attr);
 		
@@ -220,10 +260,9 @@ GOKb.forms.bindDataLookup = function (elem, def) {
     selectOnBlur        : true,
     escapeMarkup        : function (m) { return m; },
     id                  : function (object) { return object.value; },
-    initSelection       : function (element, callback) {
-      var data = {id: element.val(), text: element.val()};
-      callback(data);
-    }
+    nextSearchTerm      : function (selectedObject, currentSearchTerm) {
+      return currentSearchTerm;
+    },
   };
   
   // If not a select then add a query lookup, else we need to fetch all the results first and add them all.
@@ -235,7 +274,7 @@ GOKb.forms.bindDataLookup = function (elem, def) {
       
       // The text.
       var text;
-      var suffix = "0000}"
+      var suffix = "0000}";
       if (query.term && "value" in result && result.value.indexOf(suffix, this.length - suffix.length) === -1) {
         
         // Highlight within the label the matched area.
@@ -254,6 +293,13 @@ GOKb.forms.bindDataLookup = function (elem, def) {
     // Set the formatters.
     conf.formatResult = formatResult;
     conf.formatSelection = formatResult;
+    
+    // Add the functionality for user to add their own.
+//    conf.createSearchChoicePosition = "top";
+//    conf.createSearchChoice = function(term) {
+//      return { id : query.term + "::{" + source[1] + ":0000}"};
+//    };
+    
     
     // Variable to hold the timeout method, to wait for
     // a timeout after the user stops typing.
@@ -283,9 +329,9 @@ GOKb.forms.bindDataLookup = function (elem, def) {
                 results: []
               };
               
-              if (def.create && query.page == 1) {
-                res.results.push({value: (query.term + "::{" + source[1] + ":0000}"), label: (query.term)});
-              }
+//              if (def.create && query.page == 1) {
+//                res.results.push({value: (query.term + "::{" + source[1] + ":0000}"), label: (query.term)});
+//              }
               
               if (data && "list" in data && data.list.length > 0) {
                 
@@ -305,8 +351,38 @@ GOKb.forms.bindDataLookup = function (elem, def) {
       }, 1000);
     };
     
+    // Also need to add the function that sets the initial value.
+    conf.initSelection = function (element, callback) {
+      
+      // Grab the element value.
+      var vals = $(element).val().split("::{" + source[1] + ":");
+      if (vals.length == 2) {
+        GOKb['get' + source[0]] (
+            vals[1].substring(0, vals[1].length-1),
+            {
+              "type" : source[1],
+              "match" : "id",
+            },
+            {
+              onDone : function(data) {
+                if (data.length == 1) {
+                  callback(data[0]);
+                }
+              }
+            }
+        );
+      }
+      
+      // Check that the data 
+      var data = {id: element.val(), text: element.val()};
+      callback(data);
+    };
+    
     // Add the select2.
     elem.select2(conf);
+    
+    // Set the current value.
+    elem.select2("val", def.currentValue);
   } else {
     
     // Get the list of options.
@@ -317,10 +393,19 @@ GOKb.forms.bindDataLookup = function (elem, def) {
           // Add each element.
           $.each(data.result.datalist, function () {
             var op = this;
-            elem.append($("<option />", {
+            
+            // Create the option.
+            var op_elem = $("<option />", {
               value : (op.value),
               text  : (op.name)
-            }));
+            });
+            
+            if (op.value == def.currentValue) {   
+              op_elem.prop("selected", true);
+            }
+            
+            // Add to the list.
+            elem.append(op_elem);
           });
           
           // Add the select2 once we have finished.
@@ -393,12 +478,12 @@ GOKb.forms.saveValues = function(form) {
 	});
 	
 	// Save to the metadata.
-	GOKb.doCommand(
+	return GOKb.doCommand(
 	  "datastore-save",
 	  {},
-	  {project : theProject.id, ds : JSON.stringify(data_store)},
+	  {project : theProject.id, ds : JSON.stringify(data_store),},
 	  {},
-	  {async : false, type : "post"}
+	  {type : "post",}
 	);
 };
 
@@ -409,7 +494,7 @@ GOKb.forms.saveValues = function(form) {
 GOKb.forms.getColumnsAsListOptions = function() {
 	var opts = [];
 	var cols = theProject.columnModel.columns;
-	for (i=0; i<cols.length; i++) {
+	for (var i=0; i<cols.length; i++) {
 		opts.push({
 			type 		: 'option',
 			text 		: cols[i].name,

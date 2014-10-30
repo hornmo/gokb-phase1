@@ -1,6 +1,8 @@
 package org.gokb
 
+import com.k_int.ConcurrencyManagerService
 import grails.converters.JSON
+import groovy.json.JsonSlurper
 
 import java.text.SimpleDateFormat
 
@@ -25,6 +27,7 @@ class IngestService {
   ComponentLookupService componentLookupService
   def packageService
   def sessionFactory
+  ConcurrencyManagerService concurrencyManagerService
   def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
   def possible_date_formats = [
     new SimpleDateFormat('yyyy-MM-dd'), // Default format Owen is pushing ATM.
@@ -34,6 +37,9 @@ class IngestService {
     new SimpleDateFormat('yyyy/MM'),
     new SimpleDateFormat('yyyy')
   ];
+
+  // ISO Date parser.
+  DateTimeFormatter ISODateParser = ISODateTimeFormat.dateTimeParser()
 
   /** Field prefixes ***/
   public static final String IDENTIFIER_PREFIX = 'title.identifier.'
@@ -98,64 +104,6 @@ class IngestService {
     }
 
     result
-  }
-
-  /**
-   * Do some validation on the content here.
-   */
-  def validateContent (project_data, col_positions, result) {
-
-    // Only check the content if the status is correct.
-    if (result.status) {
-
-      // Go through the data and see whether each row is valid.
-      def rowCount = 1
-
-      // Keep track of package ids in this doc.
-      Set packageIdentifiers = []
-      project_data.rowData.each { datarow ->
-
-        // Check the presence of the name first.
-        def pkg_name_pos = col_positions[PACKAGE_NAME]
-
-        if (pkg_name_pos != null) {
-
-          // Check the value of package name here.
-          def value = getRowValue(datarow,col_positions,PACKAGE_NAME)
-          if (!value || value == "") {
-            result.messages.add([text:"Row ${rowCount} contains no data for column ${PACKAGE_NAME}", type:"data_invalid", col: "${PACKAGE_NAME}"]);
-          } else {
-            // Add to the list of package ids.
-            packageIdentifiers << value.toString()
-          }
-        }
-        rowCount ++
-      }
-
-      // Check existing packages.
-      if (packageIdentifiers) {
-        def q = ComboCriteria.createFor(Package.createCriteria())
-        def existingPkgs = q.list {
-          and {
-            q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
-            q.add ("ids.value", "in", [packageIdentifiers])
-          }
-        }
-
-        if (existingPkgs) {
-          // Get the package ids that cause the issue.
-          Set offendingIds = []
-          existingPkgs.each {pkg ->
-            pkg.ids.each {Identifier theId ->
-              if (packageIdentifiers.contains(theId.value)) offendingIds << theId.value
-            }
-          }
-
-          // Add a message.
-          result.messages.add([text:"Data present in column \"${PACKAGE_NAME}\" would result in an attemped package update.", type:"data_invalid", col: "${PACKAGE_NAME}", vals: (offendingIds)]);
-        }
-      }
-    }
   }
 
   /**
@@ -234,6 +182,10 @@ class IngestService {
     Set publisher_orgs		= []
 
     log.debug("Finding existing titles...");
+    
+    Map<String, KBComponent> comps = [:].withDefault { String k ->
+      componentLookupService.lookupComponent(k)
+    }
 
     // Go through each row and build up the tipp criteria.
     def tiCrit = ComboCriteria.createFor(TitleInstance.createCriteria())
@@ -242,9 +194,9 @@ class IngestService {
       or {
 
         project_data.rowData.each { datarow ->
-          if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
+          if ( getRowValue(datarow,col_positions,PUBLICATION_TITLE) ) {
 
-            def host_platform_name = jsonv(datarow.cells[col_positions[HOST_PLATFORM_NAME]])
+            def host_platform_name = getRowValue(datarow,col_positions,HOST_PLATFORM_NAME)
             //			def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
 
             // Just add the normname to the platforms list.
@@ -260,7 +212,7 @@ class IngestService {
             packageIdentifiers << pkg_id.toString()
 
             // Lookup a publisher ID if present.
-            def pub = componentLookupService.lookupComponent ( getRowValue(datarow,col_positions,PUBLISHER_NAME) )
+            def pub = comps["${getRowValue(datarow,col_positions,PUBLISHER_NAME)}"]
             if (pub) publisher_orgs << pub
 
             // Each identifier type.
@@ -293,19 +245,6 @@ class IngestService {
 
     // Try and find a package for the provider with the name entered.
     def existingPkgs = componentLookupService.lookupComponents(packageIdentifiers).size()
-
-    //    def q = ComboCriteria.createFor(Package.createCriteria())
-    //    def existingPkgs = q.get {
-    //      and {
-    //        q.add ("ids.namespace.value", "eq", 'gokb-pkgid')
-    //        q.add ("ids.value", "in", [packageIdentifiers])
-    //        eq ("status", current)
-    //      }
-    //
-    //      projections {
-    //        countDistinct ("id")
-    //      }
-    //    }
 
     // New packages.
     newPkgs = packageIdentifiers.size() - existingPkgs
@@ -420,7 +359,7 @@ class IngestService {
     RefineProject.withNewTransaction { TransactionStatus status ->
 
       RefineProject project = RefineProject.get(project_id)
-      if ( datarow.cells[col_positions[PUBLICATION_TITLE]] ) {
+      if ( getRowValue(datarow,col_positions,PUBLICATION_TITLE) ) {
         try {
           def ids = []
           for (ai in identifiers) {
@@ -436,7 +375,7 @@ class IngestService {
 
           // Lookup the title.
           TitleInstance title_info = titleLookupService.find(
-            jsonv(datarow.cells[col_positions[PUBLICATION_TITLE]]),
+            getRowValue(datarow,col_positions,PUBLICATION_TITLE),
             getRowValue(datarow,col_positions,PUBLISHER_NAME),
             ids,
             user,
@@ -448,7 +387,7 @@ class IngestService {
 
             // Set TITLE OA STATUS if it's not null and different to the current value.. This might cause title OA status
             // to oscillate between different values - raised as a concern but dismissed as unlikely in weekly calls.
-            def title_oa_status = datarow.cells[col_positions[TITLE_OA_STATUS]]
+            def title_oa_status = getRowValue(datarow,col_positions,TITLE_OA_STATUS)
             if ( title_oa_status != null ) {
               if ( title_info.oa_status?.value != title_oa_status ) {
                 //titleOAStatus:getRowRefdataValue('TitleInstance.OAStatus', datarow, col_positions, TITLE_OA_STATUS)
@@ -607,8 +546,8 @@ class IngestService {
    *  Ingest a parsed project. 
    *  @param project_data Parsed map of project data
    */
-  def ingest(project_data, project_id, boolean incremental = true, user = null) {
-
+  def ingest(project_data, project_id, boolean incremental = true, user_id = null, job = null) {
+    
     // Return result.
     def result = [
       "status"    : (project_data ? true : false),
@@ -619,9 +558,13 @@ class IngestService {
     Set<String> skipped_titles = []
     try {
       log.debug("Ingest")
+  
+      // Load the user.
+      User user = User.get(user_id)
 
       // Set the status of this project.
       updateProjectStatus(project_id, 0, RefineProject.Status.INGESTING)
+      job?.setProgress(0)
 
       // Track the old tipps here.
       final Map<String, Set<Long>> old_tipps = [:]
@@ -706,6 +649,7 @@ class IngestService {
           if (ctr % 25 == 0) {
             // Every chunk of records we update the progress.
             updateProjectStatus(project_id, (ctr / total * 100) as int, RefineProject.Status.INGESTING)
+            job?.setProgress((ctr / total * 100) as int)
           } 
         }
       }
@@ -734,6 +678,7 @@ class IngestService {
 
       // Update the progress.
       project.progress = 100
+      job?.setProgress(100)
 
       // Save the project.
       project.save(failOnError:true, flush:true)
@@ -794,7 +739,7 @@ class IngestService {
    *  @return Map containing parsed project data
    */
   def extractRefineproject(String zipFilename) {
-    def result = null;
+    def result = [:]
 
     try {
       def full_filename = grailsApplication.config.project_dir + zipFilename
@@ -810,6 +755,19 @@ class IngestService {
         switch ( ae.name ) {
           case 'metadata.json':
             log.debug("Handle metadata");
+            
+            def json = new JsonSlurper()
+            def bai = new ByteArrayOutputStream()
+            int bytes_to_read = ae.getSize()
+            byte[] buffer = new byte[4096]
+            while (bytes_to_read) {
+              int bytes_read = tin.read(buffer,0,4096)
+              log.debug("Copying ${bytes_read} bytes to byte array");
+              bai.write(buffer, 0, bytes_read)
+              bytes_to_read -= bytes_read
+            }
+          
+            result.metadata = json.parseText(bai.toString());
             break;
           case 'data.zip':
             def temp_data_zipfile
@@ -830,7 +788,7 @@ class IngestService {
               fos.flush()
               fos.close();
 
-              result = extractRefineDataZip(temp_data_zipfile)
+              extractRefineDataZip(temp_data_zipfile, result)
             }
             finally {
               if ( temp_data_zipfile ) {
@@ -855,14 +813,13 @@ class IngestService {
     catch ( Exception e ) {
       log.error("Unexpected error trying to extract refine data.",e);
       e.printStackTrace();
+      return null
     }
 
     result
   }
 
-  def extractRefineDataZip (def zip_file) {
-
-    def result=null
+  def extractRefineDataZip (def zip_file, def result) {
 
     // Open temp zip file as a zip object
     if ( zip_file ) {
@@ -871,7 +828,6 @@ class IngestService {
       java.util.zip.ZipEntry ze = zf.getEntry('data.txt')
       if ( ze ) {
         log.debug("Got data.txt")
-        result = [:]
         result.processingCompleted = false;
         processData(result, zf.getInputStream(ze));
       }
@@ -1000,18 +956,15 @@ class IngestService {
     // Parse the date.
     Date the_date = null
 
-    if (datestr) {
-
-      // ISO parser.
-      DateTimeFormatter parser = ISODateTimeFormat.dateTimeParser()
+    if (datestr && datestr.trim() != "") {
 
       log.debug ("Trying to parse date from ${datestr}")
       try {
-        the_date = parser.parseDateTime(datestr).toDate()
+        the_date = ISODateParser.parseDateTime(datestr).toDate()
 
       } catch (Throwable t) {
 
-        log.debug ("Error parsing date resulted in null date.")
+        log.debug ("Error parsing date. '${datestr}' resulted in null date.")
 
         // Ensure null date.
         the_date = null

@@ -44,7 +44,13 @@ public class HQLBuilder {
    *
    *
    */
-  public static def build(grailsApplication, qbetemplate, params, result, target_class, genericOIDService) {
+  public static def build(grailsApplication, 
+                          qbetemplate, 
+                          params,
+                          result, 
+                          target_class, 
+                          genericOIDService,
+                          returnObjectsOrRows='objects') {
     // select o from Clazz as o where 
 
     // log.debug("build ${params}");
@@ -105,12 +111,19 @@ public class HQLBuilder {
     // log.debug("BindVars: ${hql_builder_context.bindvars}");
 
     def count_hql = "select count (o) ${hql}"
-    def fetch_hql = "select o ${hql}"
+    def fetch_hql = null
+    if ( returnObjectsOrRows=='objects' ) {
+      fetch_hql = "select o ${hql}"
+    }
+    else {
+      fetch_hql = "select ${buildFieldList(qbetemplate.qbeConfig.qbeResults)} ${hql}"
+    }
 
     log.debug("Attempt count qry ${count_hql}");
     // log.debug("Attempt qry ${fetch_hql}");
 
     result.reccount = baseclass.executeQuery(count_hql, hql_builder_context.bindvars)[0]
+    log.debug("Got count result: ${result.reccount}");
 
     def query_params = [:]
     if ( result.max )
@@ -118,9 +131,9 @@ public class HQLBuilder {
     if ( result.offset )
       query_params.offset = result.offset
 
+    log.debug("Get data rows..");
     result.recset = baseclass.executeQuery(fetch_hql, hql_builder_context.bindvars,query_params);
-
-    // log.debug("Result of count query: ${result.reccount}");
+    log.debug("Returning..");
   }
 
   static def processProperty(hql_builder_context,crit,baseclass) {
@@ -300,4 +313,14 @@ public class HQLBuilder {
     sw.toString();
   }
 
+  static def buildFieldList(defns) {
+    def result = new java.io.StringWriter()
+    result.write('o.id');
+    result.write(',o.class');
+    defns.each { defn ->
+      result.write(",o.");
+      result.write(defn.property);
+    }
+    result.toString();
+  }
 }

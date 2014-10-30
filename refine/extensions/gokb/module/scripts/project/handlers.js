@@ -206,7 +206,7 @@ GOKb.handlers.estimateChanges = function (incremental) {
       }
     }
   );
-}
+};
 
 GOKb.handlers.checkInWithProps = function(hiddenProperties) {
 
@@ -386,4 +386,4 @@ GOKb.handlers.createBlankColumn = function (col_name) {
 	  null,
 	  { modelsChanged: true }
 	);
-}
+};

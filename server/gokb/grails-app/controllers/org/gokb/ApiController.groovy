@@ -1,10 +1,19 @@
 package org.gokb
 
 import static java.util.UUID.randomUUID
+
+import com.k_int.ConcurrencyManagerService
+import com.k_int.TextUtils
+import com.k_int.ConcurrencyManagerService.Job
+
 import grails.converters.JSON
 import grails.plugins.springsecurity.Secured
 import grails.util.GrailsNameUtils
 
+import java.security.SecureRandom
+
+import org.apache.commons.codec.binary.Base64
+import org.apache.tika.Tika
 import org.gokb.cred.*
 import org.gokb.refine.RefineOperation
 import org.gokb.refine.RefineProject
@@ -16,6 +25,10 @@ import org.gokb.refine.RefineProject
  */
 
 class ApiController {
+  
+  RefineService refineService
+  SecureRandom rand = new SecureRandom()
+  UploadAnalysisService uploadAnalysisService
 
   private static final Closure TRANSFORMER_PROJECT = {
 
@@ -49,6 +62,15 @@ class ApiController {
           switch (k) {
             case "incomingCombos" :
             case "outgoingCombos" :
+            case "allPropertiesAndVals" :
+            case "allComboPropertyNames" :
+            case "allComboTypeValues" :
+            case {it ==~ /^.+Service$/} :
+            case "grailsApplication" :
+            case "allComboPropertyNames" :
+            case "allComboTypeValues" :
+            case "allComboTypeValues" :
+            case "sourceFile" :
               /* DO nothing */
             break
 
@@ -65,13 +87,15 @@ class ApiController {
   def grailsApplication
   def springSecurityService
   def componentLookupService
+  def genericOIDService
+  ConcurrencyManagerService concurrencyManagerService
 
   /**
    * Before interceptor to check the current version of the refine
    * plugin that is being used.
    */
 
-  def beforeInterceptor = [action: this.&versionCheck]
+  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'downloadUpdate', 'search']]
 
   // defined with private scope, so it's not considered an action
   private versionCheck() {
@@ -80,13 +104,14 @@ class ApiController {
     else {
       def gokbVersion = request.getHeader("GOKb-version")
       def serv_url = grailsApplication.config.extensionDownloadUrl ?: 'http://gokb.kuali.org'
-
-      if (gokbVersion != grailsApplication.config.refine_min_version) {
-        apiReturn([errorType : "versionError"], "You are using an out of date version of the GOKb extension. " +
-        "Please download and install the latest version from <a href='${serv_url}' >${serv_url}</a>." +
-        "<br />You will need to restart refine and clear your browser cache after installing the new extension.",
-        "error")
-        return false
+      
+      if (gokbVersion != 'development') {
+        if (!gokbVersion || TextUtils.versionCompare(gokbVersion, grailsApplication.config.refine_min_version) < 0) {
+          apiReturn([errorType : "versionError"], "The refine extension you are using is not compaitble with this instance of the service.",
+          "error")
+          
+          return false
+        }
       }
     }
   }
@@ -100,6 +125,34 @@ class ApiController {
 
   // Internal API return object that ensures consistent formatting of API return objects
   private def apiReturn = {result, String message = "", String status = "success" ->
+    
+    // If the status is error then we should log an entry.
+    if (status == 'error') {
+      
+      // Generate a 16bytes of random data to be base64 encoded which can be returned to the user to help with tracking issues in the logs.
+      byte[] randomBytes = new byte[6]
+      rand.nextBytes(randomBytes)
+      def ticket = Base64.encodeBase64String(randomBytes);
+      
+      // Let's see if we have a throwable.
+      if (result && result instanceof Throwable) {
+        
+        // Log the error with the stack...
+        log.error("[[${ticket}]] - ${message == "" ? result.getLocalizedMessage() : message}", result)
+      } else {        
+        log.error("[[${ticket}]] - ${message == "" ? 'An error occured, but no message or exception was supplied. Check preceding log entries.' : message}")
+      }
+      
+      // Ensure we have something to send back to the user.
+      if (message == "") {
+        message = "An unknow error occurred."
+      } else {
+      
+        // We should now send the message along with the ticket.
+        message = "${message}".replaceFirst("\\.\\s*\$", ". The error has been logged with the reference '${ticket}'")
+      }
+    }
+    
     def data = [
       code    : (status),
       result    : (result),
@@ -115,19 +168,15 @@ class ApiController {
   def index() {
   }
 
-  //  @Secured(["ROLE_USER"])
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def describe() {
     apiReturn(RefineOperation.findAll ())
   }
 
-  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def checkMD5() {
 
-    def metadata = JSON.parse(params.get("md"));
-
-    // The parameters.
-    log.debug(metadata);
-    def md5 = metadata.customMetadata.hash;
+    def md5 = params.get("hash");
     long pId = params.long("project");
 
     // RefineProject
@@ -147,7 +196,7 @@ class ApiController {
     apiReturn(result)
   }
 
-  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def checkSkippedTitles() {
 
     long pId = params.long("project");
@@ -162,7 +211,7 @@ class ApiController {
     apiReturn(result)
   }
 
-  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def estimateDataChanges() {
     log.debug("Try to estimate what changes will occur in CRED for data in zip file.")
     def f = request.getFile('dataZip')
@@ -180,11 +229,15 @@ class ApiController {
             Long.toString(System.nanoTime()) + '_gokb_','_refinedata.zip',null
             )
         f.transferTo(temp_data_zipfile)
-        def parsed_project_file = ingestService.extractRefineDataZip(temp_data_zipfile)
+        def parsed_project_file = [:]
+        ingestService.extractRefineDataZip(temp_data_zipfile, parsed_project_file)
 
         log.debug("Try and predetermine the changes.");
         result = ingestService.estimateChanges(parsed_project_file, params.projectID, (params.boolean("incremental") != false))
 
+      } catch (Exception e) {
+        
+        apiReturn(e, null, "error")
       } finally {
         if ( temp_data_zipfile ) {
           try {
@@ -201,7 +254,7 @@ class ApiController {
     apiReturn ( result )
   }
 
-  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def saveOperations() {
     // Get the operations as a list.
 
@@ -225,12 +278,12 @@ class ApiController {
     apiReturn( null, "Succesfully saved the operations.")
   }
 
-  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def projectList() {
     apiReturn (RefineProject.findAll().collect(TRANSFORMER_PROJECT))
   }
 
-  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def projectCheckout() {
 
     // Get the current user from the security service.
@@ -274,7 +327,7 @@ class ApiController {
     response.status = 404;
   }
 
-  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def projectCheckin() {
 
     // Get the current user from the security service.
@@ -285,6 +338,8 @@ class ApiController {
     def f = request.getFile('projectFile')
 
     if (f && !f.empty) {
+      
+      boolean new_project = false;
 
       // Get the project.
       RefineProject project
@@ -300,6 +355,8 @@ class ApiController {
         project = new RefineProject()
         project.setCreatedBy(user)
         project.setLastCheckedOutBy(user)
+        
+        new_project = true
       }
 
       if (project) {
@@ -358,6 +415,19 @@ class ApiController {
 
         if ( parsed_project_file == null )
           throw new Exception("Problem parsing project file");
+          
+        // We now need to save the embeded source-file (if one is present)
+        if (new_project) {
+          log.debug("First time checking in the project. Let's add the source file.")
+          final String source_file_str = parsed_project_file?.metadata?.customMetadata?."source-file"
+          if (source_file_str) {
+            
+            log.debug("Found source file in metadata. Decoding and adding to project.")
+            // We need to decode it (base64).
+            def source_tgz = Base64.decodeBase64(source_file_str)
+            project.setSourceFile(source_tgz)
+          }
+        }
 
         project.possibleRulesString = suggestRulesFromParsedData (parsed_project_file, project.provider) as JSON
 
@@ -400,7 +470,7 @@ class ApiController {
     response.status = 404;
   }
 
-  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   private def projectIngest (RefineProject project, parsed_data, boolean incremental, User user) {
     log.debug("projectIngest....");
 
@@ -422,7 +492,7 @@ class ApiController {
     }
   }
 
-  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def projectDataValid() {
 
     log.debug("Try to validate data in zip file.")
@@ -438,7 +508,8 @@ class ApiController {
             Long.toString(System.nanoTime()) + '_gokb_','_refinedata.zip',null
             )
         f.transferTo(temp_data_zipfile)
-        def parsed_project_file = ingestService.extractRefineDataZip(temp_data_zipfile)
+        def parsed_project_file = [:]
+        ingestService.extractRefineDataZip(temp_data_zipfile, parsed_project_file)
 
         log.debug("Validate the data in the zip");
         validationResult = ingestService.validate(parsed_project_file)
@@ -460,23 +531,23 @@ class ApiController {
   }
 
   private def doIngest(parsed_data, project, boolean incremental, user) {
-    log.debug("ingesting refine project.. kicking off background task");
-
-
-    // Create a new session to run the ingest service in asynchronous.
-
-    runAsync ({projData, Long projId, boolean inc, usr ->
-      RefineProject.withNewSession {
-
-        // Fire the ingest of the project id.
-        ingestService.ingest(projData, projId, inc, user)
-      }
-
-      log.debug ("Finished data insert.")
-    }.curry(parsed_data, project.id, incremental, user))
+    log.debug("ingesting refine project.. kicking off background task")
+    
+    // When using the concurrency manager we need to make sure that the supplied
+    // closure can run independently of this request. Therefore we need to curry across
+    // anything needed to execute the action.
+    Job background_job = concurrencyManagerService.createJob (
+      { IngestService is, projData, Long projId, boolean inc, user_id, job ->
+        // Create a new session to run the ingest.
+        RefineProject.withNewSession {
+          is.ingest(projData, projId, inc, user_id, job)
+          log.debug ("Finished data insert.")
+        }
+      }.curry(ingestService, parsed_data, project.id, incremental, user.id))
+    .startOrQueue()
   }
 
-  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_SUPERUSER', 'ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def refdata() {
     def result = [:];
 
@@ -504,12 +575,15 @@ class ApiController {
     apiReturn(result)
   }
 
-  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def projectIngestProgress() {
     if (params.projectID) {
 
       // Get the project.
       def project = RefineProject.get(params.projectID)
+      
+      // Also checking job 1...
+      log.debug ("Job 1: " + concurrencyManagerService.getJob(1)?.progress ?: "Undefined")
 
       if (project) {
         // Return the progress.
@@ -526,7 +600,7 @@ class ApiController {
    *   Return a JSON structured array of the fields that should be collected when a project is checked in for the
    *   first time
    */
-  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def getProjectProfileProperties() {
     def result = [
       [
@@ -574,7 +648,7 @@ class ApiController {
    * Suggest the rules that might apply to the data.txt within this zip file.
    * @param dataZip
    */
-  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def suggestRulesFromData() {
 
     log.debug ("Attempting to get rule suggestions from data zip.")
@@ -595,7 +669,8 @@ class ApiController {
             Long.toString(System.nanoTime()) + '_gokb_','_refinedata.zip',null
             );
         f.transferTo(temp_data_zipfile)
-        def parsed_project_file = ingestService.extractRefineDataZip(temp_data_zipfile)
+        def parsed_project_file = [:]
+        ingestService.extractRefineDataZip (temp_data_zipfile, parsed_project_file)
         rules = suggestRulesFromParsedData ( parsed_project_file, provider )
 
       } finally {
@@ -625,7 +700,7 @@ class ApiController {
     }
   }
 
-  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def lookup() {
     
     // Results per page.
@@ -636,7 +711,10 @@ class ApiController {
     
     // Object attributes to search.
     def match_in = ["name"]
+    
+    // Lists from jQuery come through with brackets...
     match_in += params.list("match")
+    match_in += params.list("match[]")
     
     // Attributes to return.
     def attr = ["label"]
@@ -672,7 +750,12 @@ class ApiController {
             // Add a condition for each parameter we wish to search.
             or {
               match_in.each { String param_name ->
-                criteria.add ("${param_name}", "ilike", "%${term}%")
+                switch (param_name) {
+                  
+                  case "id" : criteria.add ("${param_name}", "eq", term.toLong());break;
+                  // Like for strings.
+                  default : criteria.add ("${param_name}", "ilike", "%${term}%")
+                }
               }
             }
           }
@@ -695,7 +778,12 @@ class ApiController {
             // Add a condition for each parameter we wish to search.
             or {
               match_in.each { String param_name ->
-                criteria.add ("${param_name}", "ilike", "%${term}%")
+                switch (param_name) {
+                  
+                  case "id" : criteria.add ("${param_name}", "eq", term.toLong());break;
+                  // Like for strings.
+                  default : criteria.add ("${param_name}", "ilike", "%${term}%")
+                }
               }
             }
           }
@@ -706,8 +794,8 @@ class ApiController {
       
       // SO: listDistinct will not work with pagination, so we are forcing a linked HashSet here which will maintain the order from the
       // the query but strip out the duplicates.
-      LinkedHashSet formattedResults = new LinkedHashSet()
-      formattedResults.addAll (results.collect { KBComponent comp ->
+      LinkedHashSet formattedResults = []
+      formattedResults.addAll results.collect { KBComponent comp ->
             
         // Add each requested parameter to the return map. Label is a special case as we return "name"
         // for this. This is to keep backwards compatibility with the JQuery autocomplete default behaviour.
@@ -736,7 +824,7 @@ class ApiController {
         
         // Return the map entry.
         item
-      })
+      }
       
       // Add the total if we have a page.
       def resp
@@ -761,7 +849,7 @@ class ApiController {
     }
   }
   
-  @Secured(['ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def quickCreate() {
     // Get the type of component we are going to attempt to create.
     def type = params.qq_type
@@ -808,8 +896,89 @@ class ApiController {
       
     } catch (Throwable t) {
       /* Just return an empty list. */
-      log.error(t)
+      (t)
       apiReturn (null, "There was an error creating a new Component of ${type}")
     }
   }
+  
+  def checkUpdate () {
+    def result = refineService.checkUpdate(params."current-version" ?: request.getHeader("GOKb-version"))
+    apiReturn (result)
+  }
+  
+  def downloadUpdate () {
+    
+    // Grab the download.
+    def file = refineService.extensionDownloadFile (params."requested-version")
+    if (file) {
+      // Send the file.
+      response.setContentType("application/x-gzip")
+      response.setHeader("Content-disposition", "attachment;filename=${file.getName()}")
+      response.outputStream << file.newInputStream()
+    }
+
+    // Send not found.
+    response.status = 404
+  }
+
+  // this is used as an entrypoint for single page apps based on frameworks like angular.
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def search() {
+    def result = [:]
+
+    User user = springSecurityService.currentUser
+
+    log.debug("Entering SearchController:index");
+
+    result.max = params.max ? Integer.parseInt(params.max) : ( user.defaultPageSize ?: 10 );
+    result.offset = params.offset ? Integer.parseInt(params.offset) : 0;
+
+    if ( request.JSON ) {
+
+        result.qbetemplate = request.JSON.cfg
+
+        // Looked up a template from somewhere, see if we can execute a search
+        if ( result.qbetemplate ) {
+          log.debug("Execute query");
+          def qresult = [max:result.max, offset:result.offset]
+          result.rows = doQuery(result.qbetemplate, params, qresult)
+          log.debug("Query complete");
+          result.lasthit = result.offset + result.max > qresult.reccount ? qresult.reccount : ( result.offset + result.max )
+  
+          // Add the page information.
+          result.page_current = (result.offset / result.max) + 1
+          result.page_total = (qresult.reccount / result.max).toInteger() + (qresult.reccount % result.max > 0 ? 1 : 0)
+        }
+        else {
+          log.error("no template ${result?.qbetemplate}");
+        }
+    }
+    else {
+      log.debug("No request json");
+    }
+
+    render result as JSON
+  }
+
+  def private doQuery (qbetemplate, params, result) {
+    log.debug("doQuery ${result}");
+    def target_class = grailsApplication.getArtefact("Domain",qbetemplate.baseclass);
+    com.k_int.HQLBuilder.build(grailsApplication, qbetemplate, params, result, target_class, genericOIDService)
+    def resultrows = []
+
+    log.debug("process recset..");
+    int seq = result.offset
+    result.recset.each { rec ->
+      // log.debug("process rec..");
+      def response_row = [:]
+      response_row['__oid'] = rec.class.name+':'+rec.id
+      response_row['__seq'] = seq++
+      qbetemplate.qbeConfig.qbeResults.each { r ->
+        response_row[r.heading] = groovy.util.Eval.x(rec, 'x.' + r.property)
+      }
+      resultrows.add(response_row);
+    }
+    resultrows
+  }
+
 }

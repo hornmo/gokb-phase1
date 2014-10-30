@@ -1,9 +1,6 @@
 var GOKb = {
   messageBusy : "Contacting GOKb",
-  workspace : {},
-  workspaces : [],
-  current_ws : 0,
-  timeout : 1800000, // 3 minute.
+  timeout : 6000000, // 10 minute.
   handlers: {},
   globals: {},
   menuItems: [],
@@ -11,8 +8,9 @@ var GOKb = {
   api : {},
   jqVersion : jQuery.fn.jquery.match(/(\d+\.\d+)/ig),
   refine:{},
-  versionError : false,
+  lockdown : false,
   hijacked : [],
+  timer_id : false
 };
 
 /**
@@ -81,10 +79,10 @@ GOKb.hijackFunction = function(functionName, replacement) {
  */
 GOKb.defaultError = function (data) {
   
-  if (!GOKb.versionError && "result" in data && "errorType" in data.result && data.result.errorType == "authError") {
+  if (!GOKb.lockdown && "result" in data && "errorType" in data.result && data.result.errorType == "authError") {
     
     // Authentication error, do not show the error but instead show the login box.
-    var login = GOKb.createDialog("Login to " + GOKb.workspace.name, "form_login");
+    var login = GOKb.createDialog("Login to " + GOKb.core.workspace.name, "form_login");
     
     // Add the message if there is one.
     if ("message" in data && data.message && data.message != "") {
@@ -106,30 +104,53 @@ GOKb.defaultError = function (data) {
     // Show the login box.
     return login;
     
-  } else {
+  } else if (! ("result" in data && "errorType" in data.result && data.result.errorType == "authError")){
   
-    var error = GOKb.createErrorDialog("Error");
+//    var error = GOKb.createErrorDialog("Error");
     var msg;
+    var close = true;
+    var block = false;
     if  (data && ("message" in data) ) {
       msg = data.message;
-      
-      // Check for the special case version error.
-      if ("result" in data && "errorType" in data.result && data.result.errorType == "versionError") {
-        
-        // Remove close button.
-        error.bindings.closeButton.hide();
-        
-        GOKb.versionError = true;
-      }
     } else {
-      msg = "There was an error contacting the GOKb server.";
+      msg = "There was an error contacting this GOKb server.";
     }
-    if (error) {
+    
+    // Check for the special case version error.
+    if ("result" in data && "errorType" in data.result)
+      if (data.result.errorType == "versionError" || data.result.errorType == "permError") {
+        
+      // Remove close button.
+//        error.bindings.closeButton.hide();
+      close = false;
       
-      error.bindings.dialogContent.html("<p>" + msg + "</p>");
-      return GOKb.showDialog(error);
+      // Lockdown the extension for this service.
+      GOKb.lockdown = true;
       
+      // Block user input.
+      block = true;
     }
+    
+      
+//    error.bindings.dialogContent.html("<p>" + msg + "</p>");
+//      return GOKb.showDialog(error);
+    
+    // Show an error.
+    var error = {
+      text  : msg,
+      title : "Error",
+      hide  : false,
+      type : "error",
+      "block" : block,
+    };
+    
+    if (!close) {
+      error.buttons = {
+        sticker : false,
+        closer  : false,
+      };
+    }
+    return GOKb.notify.show(error);
   }
   
   // If we haven't returned anything then return then.
@@ -220,7 +241,7 @@ GOKb.createDialog = function(title, template) {
  */
 GOKb.createErrorDialog = function(title, template) {
   
-  if (!GOKb.versionError && !GOKb.globals.eDialogOpen) {
+  if (!GOKb.lockdown && !GOKb.globals.eDialogOpen) {
     
     // Temporary set to same as dialog.
     var error = GOKb.createDialog(title, template);
@@ -331,7 +352,7 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
   delete ajaxObj.error;
   
   // Set the callbacks.
-  $.ajax(ajaxObj)
+  var deferred = $.ajax(ajaxObj)
     .done ( newSucessFunction )
     .fail ( error )
   ;
@@ -342,6 +363,9 @@ GOKb.ajaxWaiting = function (ajaxObj, message) {
       dismissBusy = DialogSystem.showBusy(message);
     }
   }, 2000);
+  
+  // Return the deferred.
+  return deferred;
 };
 
 /**
@@ -370,7 +394,7 @@ GOKb.postProcess = function(command, params, body, updateOptions, callbacks) {
 GOKb.doRefineCommand = function(command, params, data, callbacks, ajaxOpts) {
   ajaxOpts = ajaxOpts || {};
   
-  if (!GOKb.versionError) {
+  if (!GOKb.lockdown) {
   
     var ajaxObj = $.extend(ajaxOpts, {
       cache     : false,
@@ -390,6 +414,12 @@ GOKb.doRefineCommand = function(command, params, data, callbacks, ajaxOpts) {
             GOKb.defaultError(dataR);
           }
         } else {
+          
+          // Check the redirects first.
+          if ("redirect" in dataR) {
+            window.location.href = dataR.redirect;
+          }
+          
           if ("onDone" in callbacks) {
             try {
               callbacks.onDone(dataR);
@@ -743,49 +773,109 @@ GOKb.getLookup = function (el, location, callback, quickCreate, title) {
 };
 
 /**
- * Check for access to API.
- */
-(GOKb.checkIsUp = function() {
-  
-  // Just call with empty callbacks. If the api is not up there will be a timeout.
-  // If the versions are wrong then the default error callback will be fired and the,
-  // version missmatch reported to the user.
-  GOKb.doCommand("isUp", {}, {}, {});
-  
-  if (!GOKb.versionError) {
-    // Check again in 3 minutes.
-    setTimeout(GOKb.checkIsUp, 180000);
-  }
-})();
-
-/**
  * Add an escape function to the regexp.
  */ 
 RegExp.escape = function(text) {
   return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 };
 
-//Load the available workspaces from refine.
-GOKb.populateWorkspaces = function () {
-  
-  // Get the workspaces.
-  GOKb.doCommand(
-    "get-workspaces",
+/**
+ * Get the core data from the backend.
+ */
+GOKb.fetchCoreData = function() { 
+  return GOKb.doCommand(
+    "get-coredata",
     {},
     {},
-    {
-      onDone : function (data) {
-        if ("workspaces" in data && "current" in data) {
-          
-          // Add the current workspace pointer.
-          GOKb.current_ws = data.current;
-          GOKb.workspaces = data.workspaces;
-          GOKb.workspace=data.workspaces[data.current];
-        }
+    { onDone : function(data) {
+        GOKb.core = data;
+        GOKb.core.workspace = GOKb.core.workspaces[GOKb.core.current];
       }
     }
   );
 };
 
-// Initialise the workspaces.
-GOKb.populateWorkspaces();
+/**
+ * This will return local core data or fetch it if not present.
+ */
+GOKb.getCoreData = function () {
+  
+  // Create the deferred object.
+  var listener;
+
+  if (typeof GOKb.core === 'undefined') {
+    // We need to populate the core instead.
+    listener = GOKb.fetchCoreData();
+  } else {
+    
+    // Return the current data, which will be updated regularly.
+    listener = $.Deferred();
+    listener.resolve(GOKb.core);
+  }
+  
+  // Get the workspaces.
+  return listener;
+};
+
+/**
+ * Timer recurring functions.
+ */
+GOKb.timer = function() {
+  
+  // Create the deferred object.
+  var listener = $.Deferred();
+  
+  if (GOKb.timer_id != null) {
+    // Need to cancel the previous schedule.
+    clearTimeout(GOKb.timer_id);
+    GOKb.timer_id = null;
+  }
+  
+  if (!GOKb.lockdown) {
+  
+    // Just call with empty callbacks. If the api is not up there will be a timeout.
+    // If the versions are wrong then the default error callback will be fired and the,
+    // version missmatch reported to the user.
+      
+      // Grab the core data.
+      GOKb.fetchCoreData().done(function(data){
+        
+        // Resolve the listener so that anything waiting on this to finish can then execute anything they need.
+        listener.resolve(GOKb);
+        
+        // Check again in 30 seconds if not called before.
+        GOKb.timer_id = setTimeout(function(){
+          GOKb.timer().done(GOKb.preCoreUpdate);
+        }, 30000);
+      });
+      
+      return listener;
+  }
+  
+  // If we get here then we have a version error and should reject.
+  listener.reject();
+  
+  // Return the listener.
+  return listener;
+};
+
+
+/**
+ * Method to run after core update.
+ * data will be the full GOKb object.
+ */
+GOKb.preCoreUpdate = function(data){
+  GOKb.updateSystemNotifications(data.core);
+};
+
+/**
+ * Act on data been sent from GOKb module backend.
+ */
+GOKb.updateSystemNotifications = function (data) {
+  
+  // Add any system notifications.
+  $.each(data['notification-stacks']['system'], function(){
+    GOKb.notify.show(this, "system");
+  });
+};
+

@@ -518,17 +518,11 @@ abstract class KBComponent {
 
   @Transient
   String getIdentifierValue(idtype) {
-    def result=null
-    ids?.each { id ->
-      the_id = KBComponent.deproxy(id)
-      tc = KBComponent.deproxy(the_id.toComponent)
-      if ( ( tc != null ) && ( tc instanceof Identifier ) ) {
-        if ( tc.ns.ns.toLowerCase() == idtype.toLowerCase() ) {
-          result = tc.value
-        }
-      }
-    }
-    result
+    
+    // As ids are combo controlled it should be enough just to call find here.
+    // This will return only the first match and stop looking afterwards.
+    // Null returned if no match.
+    ids?.find { it.namespace.value.toLowerCase() == idtype.toLowerCase() }?.value
   }
 
   @Transient
@@ -713,6 +707,9 @@ abstract class KBComponent {
     // wrap my head around A_Api yet, so added skippedTitles here as a stop-gap. Substantial changes already made to A_Api and don't
     // want to change any more yet.
     // added variantNames, ids
+    
+    // SO: Think the issue was actually that deproxy was being called on the list of items when iterating [each (el in val)]
+    // should have been called on el not val.
     def ignore_list = [
       'id',
       'outgoingCombos',
@@ -721,7 +718,7 @@ abstract class KBComponent {
       'tags',
       'systemOnly',
       'additionalProperties',
-      'skippedTitles',
+//      'skippedTitles',
       'variantNames',
       'ids',
       'fileAttachments'
@@ -746,7 +743,7 @@ abstract class KBComponent {
       }
 
       // println("Deproxy ${prop}");
-      def val = deproxy(this."${prop}")
+      def val = this."${prop}"
 
       switch (val) {
 
@@ -755,7 +752,7 @@ abstract class KBComponent {
           for (el in val) {
 
             // Deproxy the item in the list and then add.
-            def newVal = deproxy(val)
+            def newVal = KBComponent.deproxy(el)
             if (grailsApplication.isDomainClass(newVal."class")) {
               // Domain class.
               newVal = newVal.merge()
@@ -768,7 +765,7 @@ abstract class KBComponent {
           props["${prop}"] = newVals
           break
         default :
-          props["${prop}"] = val
+          props["${prop}"] = KBComponent.deproxy(val)
       }
     }
 

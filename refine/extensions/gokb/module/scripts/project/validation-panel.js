@@ -1,6 +1,8 @@
 /**
  * Validation panel constructor.
- */	
+ * @param div
+ * @param tabHeader
+ */
 function ValidationPanel(div, tabHeader) {
   this._div = div;
   this._tabHeader = tabHeader;
@@ -23,6 +25,7 @@ ValidationPanel.prototype.resize = function() {
 
 /**
  * Update the panel data.
+ * @param onDoneFunc
  */
 ValidationPanel.prototype.update = function(onDoneFunc) {
   var self = this;
@@ -57,10 +60,16 @@ ValidationPanel.prototype.update = function(onDoneFunc) {
       			// Close the statement.
       			grel += "\\\\E') != null";
       			
-      			// Add a validation message here.
-      			self.data.dataCheck.messages.push(
-      			  {"facetValue":grel,"text":"One or more title was not ingested during the last ingest.","col":"publicationtitle","facetName":"Un-ingested rows","severity":"warning","type":"data_invalid"}
-      			);
+      			self.data.dataCheck.messages.push({
+              type        : "notice",
+              title       : "Source file check",
+              text        : "One or more title was not ingested during the last ingest.",
+              facetValue  : grel,
+              col         : "publicationtitle",
+              facetName   : "Un-ingested rows",
+              type        : "notice",
+              sub_type    : "data_invalid"
+            });
       		}
       	}
       }
@@ -69,7 +78,7 @@ ValidationPanel.prototype.update = function(onDoneFunc) {
 
   // Shared params.
   var params = {
-  		md 			: JSON.stringify(theProject.metadata),
+  		hash		: JSON.stringify(theProject.metadata.customMetadata.hash),
   		project : theProject.id
   };
   
@@ -97,9 +106,7 @@ ValidationPanel.prototype.update = function(onDoneFunc) {
     		    		if ("result" in data && "status" in data.result) {
     		    			
     		    			// Merge the results into the existing object.
-//    		    			$.extend (true, self.data.dataCheck, data.result)
-    		    			$.merge( self.data.dataCheck.messages, data.result.messages )
-//    		    			self.data["dataCheck"] = data.result;
+    		    			$.merge( self.data.dataCheck.messages, data.result.messages );
     		    			
     		    		  // Then render.
     		    		  self._render();
@@ -129,161 +136,158 @@ ValidationPanel.prototype._render = function() {
   // Bind the elements.
   var elmts = DOM.bind(this._div);
   
+  // Clear it down.
+  elmts.validationContent.html("");
+  
+  // Modify the context of the element.
+  GOKb.notify.getStack('validation').context = elmts.validationContent;
+  
   // Check the data
   var data = self.data;
-	
-	// Add the errors and warnings.
-	var errorMess = [];
-	var warnMess = [];
-	
-	if ("md5Check" in data && "hashCheck" && data.md5Check) {
-		if (data.md5Check.hashCheck == false) {
-			
-			// Add the warning.
-			warnMess.push(["<span class='warning' >GOKb has detected that at this file may have been used to create another project.</span>", ""]);
-		}
-	}
+  
+  if ("md5Check" in data && "hashCheck" && data.md5Check) {
+    if (data.md5Check.hashCheck == false) {
+      self.showMessage({
+        type  : "notice",
+        title : "Source file check",
+        text  : "GOKb has detected that this file may have been used to create another project."
+      });
+    }
+  }
+    
+  var errors = 0, warnings = 0;
   
   if ("dataCheck" in data) {
-		
-		if ("messages" in data.dataCheck) {
-			
-			// hasError.
-			var hasError = false;
-			
-			$.each(data.dataCheck.messages, function() {
-				
-				// Get the message.
-				var message = this;
-				
-				// The link to display the menu.
-				var menuLink = $("<a class='button' href='javascript:{}' ><img src='images/right-arrow.png'></a>")
-					.appendTo($("<div class='gokb-message-actions' />"))
-					.click(function() {
-						ValidationPanel.messages.getActions(message, $(this));
-					});
-				;
-				
-				if (message.severity == "error") {
-					// Push the data to the error table.
-					errorMess.push(["<span class='error' >" + message.text + "</span>", menuLink]);
-				} else {
-					// Push the data to the error table.
-					warnMess.push(["<span class='warning' >" + message.text + "</span>", menuLink]);
-				}
-				
-			});
-			
-			// Set the header error count to the correct number. 
-			self._tabHeader.html('Errors <span class="error count">' + errorMess.length + '</span> / <span class="warning count">' + warnMess.length + '</span>');
-			
-			// Clear the HTML first.
-			elmts.validationContent.html("");
-			
-			// Append the table to the dialog...
-			if (errorMess.length > 0) {
-				
-				// Error message table.
-				var errorMessages = GOKb.toTable (
-				  ["<span class='error' >Error messages</span>", ""],
-				  errorMess
-				).addClass("error");
-				
-				// Add the table.
-				elmts.validationContent.append(errorMessages);
-				hasError = true;
-			}
-			if (warnMess.length > 0) {
-
-				// Warning message table.
-				var warnMessages = GOKb.toTable (
-	 			  ["<span class='warning' >Warning messages</span>", ""],
-				  warnMess
-				).addClass("warning");
-				
-				// Add the table.
-				elmts.validationContent.append(warnMessages);
-				hasError = true;
-			}
-		}
-  	
-  	if (hasError) {
-			$('h1', elmts.panelContent).hide();
-			
-			if (errorMess.length == 0) {
-				
-				// There must only be warnings. We still need to allow the ingest to take place.
-	  		elmts.validationContent
-					.append($("<h1 />")
-						.text("GOKb Validation Status"))
-					.append($("<p />")
-						.text("There are warnings against your project currently but these will not stop you from continuing to ingest."))
-					.append("<p>To update any existing packages in GOKb with data in this file you " +
-  			      " can choose to 'Update packages'</p>")
-	  			.append(
-	  			  $("<div>").attr("id", "gokb-ingest-button").append(
-				  		$('<button />')
-				  			.addClass("button")
-				  			.text("Update packages")
-				  			.click(function() {
-				  				GOKb.handlers.estimateChanges(true);
-				  			})
-				  	)
-			  	)
-//			  	.append("<h1>Replacement update</h1><p>If you would like to retire existing packages "+
-//			  	        "and create new ones based on this data then choose 'Replace packages'</p>")
-//	  			.append(
-//	  			  $("<div>").attr("id", "gokb-ingest-button").append(
-//				  		$('<button />')
-//				  			.addClass("button")
-//				  			.text("Replace packages")
-//				  			.click(function() {
-//				  				GOKb.handlers.estimateChanges(false);
-//				  			})
-//				  	)
-//			  	)
-				;
-  		}
-  	} else {
-  		
-			// Set the header error count to the correct number.
-  		self._tabHeader.html('Errors <span class="error count">0</span> / <span class="warning count">0</span>');
-  		
-  		elmts.validationContent
-  			.html("<p>The current project has passed all validation rules. You now have 2 " +
-  			      "choices of how to handle the data in this project.</p>")
-  			.append("<h1>Incremental update</h1><p>To update any existing packages in GOKb with data in this file you " +
-  			      " can choose to 'Update packages'</p>")
-  			.append(
-  			  $("<div>").attr("id", "gokb-ingest-button").append(
-			  		$('<button />')
-			  			.addClass("button")
-			  			.text("Update packages")
-			  			.click(function() {
-			  				GOKb.handlers.estimateChanges(true);
-			  			})
-			  	)
-		  	)
-		  	.append("<h1>Replacement update</h1><p>If you would like to retire existing packages "+
-		  	        "and create new ones based on this data then choose 'Replace packages'</p>")
-  			.append(
-  			  $("<div>").attr("id", "gokb-ingest-button").append(
-			  		$('<button />')
-			  			.addClass("button")
-			  			.text("Replace packages")
-			  			.click(function() {
-			  				GOKb.handlers.estimateChanges(false);
-			  			})
-			  	)
-		  	)
-  		;
-  		$('h1', elmts.panelContent).show();
-  	}
-  } else {
-  	self._tabHeader.html('Errors <span class="count error">0</span>');
-		elmts.validationContent.html("<p>Unable to contact the GOKb service for validation information..</p>");
+    if ("messages" in data.dataCheck) {
+      
+      // Handle the errors first.
+      $.each(data.dataCheck.messages, function() {
+        
+        // Push to the stack.
+        if (this.type == 'error') {
+          self.showMessage(this);
+          errors ++;
+        }
+      });
+      
+      // If we have no errors at this point then we can add the ingest note.
+      if (errors == 0) {
+        
+        // Show a message allowing ingest.
+        var ingest_note = {
+          title : "Project valid",
+          noMenu : true
+        };
+        
+        if (data.dataCheck.messages.length > 0) {
+          // Warnings in project.
+          $.extend(ingest_note, {
+            type: "info",
+            text: "There are warnings for this project, but these will not stop you from continuing to update GOKb with the data in this project."
+          });
+        } else {
+          // No warnings.
+          $.extend(ingest_note, {
+            type: "success",
+            text: "There are no warnings or errors for this project. You can now update GOKb with the data in this project."
+          });
+        }
+        
+        // Add the confirmation buttons to trigger an ingest.
+        ingest_note.confirm = {
+          confirm: true,
+          buttons: [{
+            text: 'Update GOKb',
+            addClass: 'button',
+            click: function(notice) {
+              // Modify the notice to prevent further clicking.
+//              notice.update({
+//                text: 'Beginning update process...',
+//                confirm: {
+//                  confirm: false
+//                }
+//              });
+              
+              // Fire the data change estimates.
+              GOKb.handlers.estimateChanges(true);
+            }
+          }]
+        };
+        
+        // Fix issue with only setting 1 button.
+        ingest_note.before_init = function(opts) {
+          // Remove the last element.
+          opts.confirm.buttons = opts.confirm.buttons.splice(0,opts.confirm.buttons.length - 1);
+        };
+        
+        // Show the notification now.
+        self.showMessage(ingest_note);
+      }
+      
+      // Handle the warnings next.
+      $.each(data.dataCheck.messages, function() {
+        
+        // Push to the stack.
+//        if (this.type != 'error') {
+//          self.showMessage($.extend(this, {
+//            buttons: {
+//              closer    : true,
+//              sticker   : false,
+//            }
+//          }));
+//        }
+        
+        if (this.type != 'error') {
+          self.showMessage(this);
+          warnings ++;
+        }
+      });
+    }
   }
+  
+  // Add the counters.
+  $("#gokb-validation-tab .count").html("<span class='error'>" + errors + "</span>/<span class='warning'>" + warnings + "</span>");
+};
 
-  // Resize the panel.
-  this.resize();
+/**
+ * Show a single message on the validation panel. 
+ * @param message
+ */
+ValidationPanel.prototype.showMessage = function (message) {
+  // The link to display the menu.
+  
+  // Add the defaults to the message.
+  var m = $.extend({}, message, {
+    title: message.col,
+    before_open : function (notice) {
+      // Add the menu if needed.
+      
+      if (!("noMenu" in message) || !message.noMenu) {
+        var menuLink = $("<div class='gokb-message-actions' />").append(
+          $("<span class='ui-icon ui-icon-wrench' title='Menu'></span>")
+          
+        ).click(function() {
+          ValidationPanel.messages.getActions(message, $(this));
+          
+        }).hide();
+        
+        notice.container.prepend(menuLink);
+        
+        // Add the mouseover listener.
+        notice.elem.on({
+          "mouseenter": function(e){
+            // Show the button.
+            menuLink.show();
+          },
+          "mouseleave": function(e){
+            // Show the button.
+            menuLink.hide();
+          }
+        });
+      }
+    }
+  });
+  
+  // Add the message to the validation stack..
+  GOKb.notify.show(m, 'validation');
 };

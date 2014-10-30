@@ -135,6 +135,10 @@ div.selector {
   }
 }
 
+.menu-container {
+	z-index:999999 !important;
+}
+
 #gokb-validation-panel {
   overflow: auto;
 }
@@ -149,8 +153,25 @@ div.selector {
     color: #444444;
     margin: 1em;
     padding: 0 0 13px;
+
+		#validationContent {
+		
+			position : relative;
+			.ui-pnotify {
+				width:252px !important;
+				font-size: 0.9em;
+				position:relative;
+				top:0 !important;
+				margin-bottom:15px !important;
+				margin-left:12px !important;
+			}
+		}
   }
   
+  .gokb-message-actions {
+  	float:right;
+  	cursor: pointer;
+  }  
   h1 {
     padding: 15px;
     font-size: 1.2em;
@@ -265,6 +286,14 @@ div.selector {
 }
 
 /** Context menu custom style **/
+.context-menu-layer {
+  z-index: 100000001 !important;
+}
+
+.context-menu-list {
+  z-index: 100000002 !important;
+}
+
 .context-menu-item {
   width:115px !important;
   font-size:1.1em;
@@ -274,4 +303,28 @@ div.selector {
 
 .context-menu-submenu:after {
     top: 3px;
+}
+
+/** Notification styles **/
+.ui-pnotify {
+	font-size:1.2em;
+	z-index: 100 !important;
+	a {
+		cursor:pointer;
+	}
+}
+
+.notification-action {
+	display:block;
+	font-weight: bold;
+	padding:0;
+	text-align:right;
+}
+
+#block-notification-overlay {
+  z-index: 2147483646 !important;
+}
+
+.system-stack {
+  z-index: 2147483647 !important;
 }
