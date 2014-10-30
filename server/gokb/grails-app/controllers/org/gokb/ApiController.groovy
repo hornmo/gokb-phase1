@@ -1,11 +1,6 @@
 package org.gokb
 
 import static java.util.UUID.randomUUID
-
-import com.k_int.ConcurrencyManagerService
-import com.k_int.TextUtils
-import com.k_int.ConcurrencyManagerService.Job
-
 import grails.converters.JSON
 import grails.plugins.springsecurity.Secured
 import grails.util.GrailsNameUtils
@@ -13,23 +8,24 @@ import grails.util.GrailsNameUtils
 import java.security.SecureRandom
 
 import org.apache.commons.codec.binary.Base64
-import org.apache.tika.Tika
 import org.gokb.cred.*
 import org.gokb.refine.RefineOperation
 import org.gokb.refine.RefineProject
+
+import com.k_int.ConcurrencyManagerService
+import com.k_int.TextUtils
+import com.k_int.ConcurrencyManagerService.Job
 
 /**
  * TODO: Change methods to abide by the RESTful API, and implement GET, POST, PUT and DELETE with proper response codes.
  * 
  * @author Steve Osguthorpe
  */
-
 class ApiController {
   
-  RefineService refineService
-  SecureRandom rand = new SecureRandom()
-  UploadAnalysisService uploadAnalysisService
-
+  /**
+   * This is used to jsonize the projects.
+   */
   private static final Closure TRANSFORMER_PROJECT = {
 
     // Treat as refine project.
@@ -82,48 +78,11 @@ class ApiController {
 
     return props
   }
-
-  def ingestService
-  def grailsApplication
-  def springSecurityService
-  def componentLookupService
-  def genericOIDService
-  ConcurrencyManagerService concurrencyManagerService
-
+  
+  
   /**
-   * Before interceptor to check the current version of the refine
-   * plugin that is being used.
+   *  Internal API return method that ensures consistent formatting of API return objects
    */
-
-  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'downloadUpdate', 'search']]
-
-  // defined with private scope, so it's not considered an action
-  private versionCheck() {
-    if ( params.skipVC ) {
-    }
-    else {
-      def gokbVersion = request.getHeader("GOKb-version")
-      def serv_url = grailsApplication.config.extensionDownloadUrl ?: 'http://gokb.kuali.org'
-      
-      if (gokbVersion != 'development') {
-        if (!gokbVersion || TextUtils.versionCompare(gokbVersion, grailsApplication.config.refine_min_version) < 0) {
-          apiReturn([errorType : "versionError"], "The refine extension you are using is not compaitble with this instance of the service.",
-          "error")
-          
-          return false
-        }
-      }
-    }
-  }
-
-  /**
-   * Check if the api is up. Just return true.
-   */
-  def isUp() {
-    apiReturn(["isUp" : true])
-  }
-
-  // Internal API return object that ensures consistent formatting of API return objects
   private def apiReturn = {result, String message = "", String status = "success" ->
     
     // If the status is error then we should log an entry.
@@ -164,15 +123,31 @@ class ApiController {
     render json
     //    render (text: "${params.callback}(${json})", contentType: "application/javascript", encoding: "UTF-8")
   }
+  
+  /**
+   * Before interceptor to check the current version of the refine
+   * plugin that is being used.
+   */
+  def beforeInterceptor = [action: this.&versionCheck, 'except': ['downloadUpdate', 'downloadUpdate', 'search']]
 
-  def index() {
-  }
+  def componentLookupService
 
-  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
-  def describe() {
-    apiReturn(RefineOperation.findAll ())
-  }
+  ConcurrencyManagerService concurrencyManagerService
+  def genericOIDService
+  def grailsApplication
+  def ingestService
+  SecureRandom rand = new SecureRandom()
+  RefineService refineService
 
+  def springSecurityService
+
+  UploadAnalysisService uploadAnalysisService
+
+
+  /**
+   * Checks to see if the MD5 may have been used to create a different project.
+   * @return
+   */
   @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def checkMD5() {
 
@@ -196,6 +171,9 @@ class ApiController {
     apiReturn(result)
   }
 
+  /**
+   * Return any titles that were skipped during ingest.
+   */
   @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def checkSkippedTitles() {
 
@@ -209,6 +187,73 @@ class ApiController {
 
     // Return the result.
     apiReturn(result)
+  }
+  
+  
+  /**
+   * Checks to see if there is a more up to date refine module available for this particular version.
+   */
+  def checkUpdate () {
+    def result = refineService.checkUpdate(params."current-version" ?: request.getHeader("GOKb-version"))
+    apiReturn (result)
+  }
+
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  def describe() {
+    apiReturn(RefineOperation.findAll ())
+  }
+
+  private def doIngest(parsed_data, project, boolean incremental, user) {
+    log.debug("ingesting refine project.. kicking off background task")
+    
+    // When using the concurrency manager we need to make sure that the supplied
+    // closure can run independently of this request. Therefore we need to curry across
+    // anything needed to execute the action.
+    Job background_job = concurrencyManagerService.createJob (
+      { IngestService is, projData, Long projId, boolean inc, user_id, job ->
+        // Create a new session to run the ingest.
+        RefineProject.withNewSession {
+          is.ingest(projData, projId, inc, user_id, job)
+          log.debug ("Finished data insert.")
+        }
+      }.curry(ingestService, parsed_data, project.id, incremental, user.id))
+    .startOrQueue()
+  }
+
+  def private doQuery (qbetemplate, params, result) {
+    log.debug("doQuery ${result}");
+    def target_class = grailsApplication.getArtefact("Domain",qbetemplate.baseclass);
+    com.k_int.HQLBuilder.build(grailsApplication, qbetemplate, params, result, target_class, genericOIDService)
+    def resultrows = []
+
+    log.debug("process recset..");
+    int seq = result.offset
+    result.recset.each { rec ->
+      // log.debug("process rec..");
+      def response_row = [:]
+      response_row['__oid'] = rec.class.name+':'+rec.id
+      response_row['__seq'] = seq++
+      qbetemplate.qbeConfig.qbeResults.each { r ->
+        response_row[r.heading] = groovy.util.Eval.x(rec, 'x.' + r.property)
+      }
+      resultrows.add(response_row);
+    }
+    resultrows
+  }
+
+  def downloadUpdate () {
+    
+    // Grab the download.
+    def file = refineService.extensionDownloadFile (params."requested-version")
+    if (file) {
+      // Send the file.
+      response.setContentType("application/x-gzip")
+      response.setHeader("Content-disposition", "attachment;filename=${file.getName()}")
+      response.outputStream << file.newInputStream()
+    }
+
+    // Send not found.
+    response.status = 404
   }
 
   @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
@@ -252,348 +297,6 @@ class ApiController {
     }
 
     apiReturn ( result )
-  }
-
-  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
-  def saveOperations() {
-    // Get the operations as a list.
-
-    // The line below looks like it replaces like with like but because the
-    // second parameter is a regex it gets double escaped.
-    def ops = params.operations.replaceAll("\\\\\"", "\\\\\"")
-    ops = JSON.parse(params.operations)
-
-    // Save each operation to the database
-    ops.each {
-      try {
-        new RefineOperation(
-            description : it['operation']['description'],
-            operation : new LinkedHashMap(it['operation'])
-            ).save(failOnError : true)
-      } catch (Exception e) {
-        log.error(e)
-      }
-    }
-
-    apiReturn( null, "Succesfully saved the operations.")
-  }
-
-  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
-  def projectList() {
-    apiReturn (RefineProject.findAll().collect(TRANSFORMER_PROJECT))
-  }
-
-  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
-  def projectCheckout() {
-
-    // Get the current user from the security service.
-    User user = springSecurityService.currentUser
-
-    log.debug ("User ${user.getUsername()} attempting to check-out a project.")
-    if (params.projectID) {
-
-      // Get the project.
-      def project = RefineProject.get(params.projectID)
-
-      if (project) {
-
-        if (project.getProjectStatus() != RefineProject.Status.CHECKED_OUT) {
-
-          // Get the file and send the file to the client.
-          def file = new File(grailsApplication.config.project_dir + project.file)
-
-          // Send the file.
-          response.setContentType("application/x-gzip")
-          response.setHeader("Content-disposition", "attachment;filename=${file.getName()}")
-          response.outputStream << file.newInputStream()
-
-          // Set the checkout details.
-          //		  def chOut = (params.checkOutName ?: "No Name Given") +
-          //			  " (" + (params.checkOutEmail ?: "No Email Given") + ")"
-          //		  project.setCheckedOutBy(chOut)
-          project.setLastCheckedOutBy(user)
-          project.setProjectStatus(RefineProject.Status.CHECKED_OUT)
-          //		  project.setCheckedIn(false)
-          project.setLocalProjectID(params.long("localProjectID"))
-          return
-        } else {
-          // Project already checked out.
-          log.debug ("Project already checked out")
-        }
-      }
-    }
-
-    // Send 404 if not found.
-    response.status = 404;
-  }
-
-  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
-  def projectCheckin() {
-
-    // Get the current user from the security service.
-    User user = springSecurityService.currentUser
-
-    log.debug ("User ${user.getUsername()} attempting to check-in a project.")
-
-    def f = request.getFile('projectFile')
-
-    if (f && !f.empty) {
-      
-      boolean new_project = false;
-
-      // Get the project.
-      RefineProject project
-
-      if (params.projectID) {
-        log.debug("Lookup existing project: ${params.projectID}");
-        project = RefineProject.get(params.projectID)
-        // We might end up here if importing a project exported by someone else who is using a different
-        // DB.
-      } else {
-        // Creating new project.
-        log.debug("New project");
-        project = new RefineProject()
-        project.setCreatedBy(user)
-        project.setLastCheckedOutBy(user)
-        
-        new_project = true
-      }
-
-      if (project) {
-        // Provider?
-        if (params.provider) {
-          // Set the org too.
-          Org org = Org.get(params.provider)
-          if (org) {
-            log.debug("Setting provider to ${org.id}.");
-            project.provider = org
-          }
-        }
-        
-        if (params.source) {
-          // Need to set the source here.
-          Source src = componentLookupService.lookupComponent(params.source)
-          
-          // Replace the component regex to just leave the string, and set as the name.
-          src.name = params.source.replaceAll("\\:\\:\\{[^\\}]*\\}", "")
-          
-          // Set the source of this project.
-          project.setSource(src)
-          
-          // Save the object.
-          src.save (failOnError:true)
-          project.save(failOnError:true, flush:true)
-        }
-
-        // Generate a filename...
-        def fileName = "project-${randomUUID()}.tar.gz"
-
-        // Save the file.
-        f.transferTo(new File(grailsApplication.config.project_dir + fileName))
-
-        // Set the file property.
-        project.setFile(fileName)
-
-        // Update other project properties.
-        if (params.hash) project.setHash(params.hash)
-        if (params.description) project.setDescription(params.description)
-        if (params.name) project.setName(params.name)
-        project.setProjectStatus(RefineProject.Status.CHECKED_IN)
-
-        //		project.save()
-
-        //		project.setLastCheckedOutBy(null)
-        project.setLocalProjectID(null)
-        project.setModified(new Date())
-        project.setModifiedBy(user)
-        if (params.notes) project.setNotes(params.notes)
-
-        // Parse the uploaded project.. We do this here because the parsed project data will be needed for
-        // suggesting rules or validation.
-        log.debug("Parsing refine project");
-        def parsed_project_file = ingestService.extractRefineproject(project.file)
-
-        if ( parsed_project_file == null )
-          throw new Exception("Problem parsing project file");
-          
-        // We now need to save the embeded source-file (if one is present)
-        if (new_project) {
-          log.debug("First time checking in the project. Let's add the source file.")
-          final String source_file_str = parsed_project_file?.metadata?.customMetadata?."source-file"
-          if (source_file_str) {
-            
-            log.debug("Found source file in metadata. Decoding and adding to project.")
-            // We need to decode it (base64).
-            def source_tgz = Base64.decodeBase64(source_file_str)
-            project.setSourceFile(source_tgz)
-          }
-        }
-
-        project.possibleRulesString = suggestRulesFromParsedData (parsed_project_file, project.provider) as JSON
-
-        // Make sure we null the progress...
-        project.setProgress(null)
-
-        // Save and flush the project
-        project.save(flush:true, failOnError:true)
-
-        if (params.ingest) {
-
-          // Is this an incremental update.
-          boolean incremental = (params.boolean("incremental") != false)
-
-          // Try and ingest the project too!
-          projectIngest(project,parsed_project_file,incremental, user)
-        }
-
-        // Return the project data.
-        apiReturn(project.collect(TRANSFORMER_PROJECT))
-        return
-      }
-    } else if (params.projectID) {
-
-      // Check in with no changes. (In effect we are just removing the lock)
-      def project = RefineProject.get(params.projectID)
-      if (project) {
-        // Remove lock properties and return the project state.
-        project.setProjectStatus(RefineProject.Status.CHECKED_IN)
-        //		project.setCheckedOutBy(null)
-        project.setLocalProjectID(0)
-        project.save(flush: true, failOnError: true)
-
-        apiReturn(project.collect(TRANSFORMER_PROJECT))
-        return
-      }
-    }
-
-    // Send 404 if not found.
-    response.status = 404;
-  }
-
-  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
-  private def projectIngest (RefineProject project, parsed_data, boolean incremental, User user) {
-    log.debug("projectIngest....");
-
-    if (project.getProjectStatus() == RefineProject.Status.CHECKED_IN) {
-
-      log.debug("Validate the project");
-      def validationResult = ingestService.validate(parsed_data)
-      project.lastValidationResult = validationResult.messages
-
-      if ( validationResult.status == true ) {
-        ingestService.extractRules(parsed_data, project)
-        doIngest(parsed_data, project, incremental, user)
-      }
-      else {
-        log.debug("validation failed, not ingesting");
-      }
-    } else {
-      log.debug ("Attempted to ingest checked-out project.")
-    }
-  }
-
-  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
-  def projectDataValid() {
-
-    log.debug("Try to validate data in zip file.")
-    def f = request.getFile('dataZip')
-    def validationResult = [:]
-
-    if (f && !f.empty) {
-
-      // Save the file temporarily...
-      def temp_data_zipfile
-      try {
-        temp_data_zipfile = File.createTempFile(
-            Long.toString(System.nanoTime()) + '_gokb_','_refinedata.zip',null
-            )
-        f.transferTo(temp_data_zipfile)
-        def parsed_project_file = [:]
-        ingestService.extractRefineDataZip(temp_data_zipfile, parsed_project_file)
-
-        log.debug("Validate the data in the zip");
-        validationResult = ingestService.validate(parsed_project_file)
-
-      } finally {
-        if ( temp_data_zipfile ) {
-          try {
-            temp_data_zipfile.delete();
-          }
-          catch ( Throwable t ) {
-          }
-        }
-      }
-    } else {
-      log.debug("No dataZip file request attribute supplied.")
-    }
-
-    apiReturn ( validationResult )
-  }
-
-  private def doIngest(parsed_data, project, boolean incremental, user) {
-    log.debug("ingesting refine project.. kicking off background task")
-    
-    // When using the concurrency manager we need to make sure that the supplied
-    // closure can run independently of this request. Therefore we need to curry across
-    // anything needed to execute the action.
-    Job background_job = concurrencyManagerService.createJob (
-      { IngestService is, projData, Long projId, boolean inc, user_id, job ->
-        // Create a new session to run the ingest.
-        RefineProject.withNewSession {
-          is.ingest(projData, projId, inc, user_id, job)
-          log.debug ("Finished data insert.")
-        }
-      }.curry(ingestService, parsed_data, project.id, incremental, user.id))
-    .startOrQueue()
-  }
-
-  @Secured(['ROLE_SUPERUSER', 'ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def refdata() {
-    def result = [:];
-
-    // Should take a type parameter and do the right thing. Initially only do one type
-    switch ( params.type ) {
-      case 'cp' :
-        def oq = Org.createCriteria()
-        def orgs = oq.listDistinct {
-          roles {
-            "owner" {
-              eq('desc','Org.Role');
-            }
-            eq('value','Content Provider');
-          }
-          order("name", "asc")
-        }
-        result.datalist=new java.util.ArrayList()
-        orgs.each { o ->
-          result.datalist.add([ "value" : "${o.id}", "name" : (o.name) ])
-        }
-        break;
-      default:
-        break;
-    }
-    apiReturn(result)
-  }
-
-  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
-  def projectIngestProgress() {
-    if (params.projectID) {
-
-      // Get the project.
-      def project = RefineProject.get(params.projectID)
-      
-      // Also checking job 1...
-      log.debug ("Job 1: " + concurrencyManagerService.getJob(1)?.progress ?: "Undefined")
-
-      if (project) {
-        // Return the progress.
-        apiReturn ( project.collect(TRANSFORMER_PROJECT) )
-        return
-      }
-
-      // Return a 404.
-      response.status = 404;
-    }
   }
 
   /**
@@ -644,60 +347,21 @@ class ApiController {
     apiReturn(result)
   }
 
-  /**
-   * Suggest the rules that might apply to the data.txt within this zip file.
-   * @param dataZip
-   */
-  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
-  def suggestRulesFromData() {
-
-    log.debug ("Attempting to get rule suggestions from data zip.")
-
-    def f = request.getFile('dataZip')
-    def rules = [:]
-    if (f && !f.empty) {
-      Org provider = null;
-      if (params.providerID) {
-        provider = Org.get(params.providerID)
-        log.debug("Provider to use in rules is: '" + provider.name + "'")
-      }
-
-      def temp_data_zipfile
-      try {
-
-        temp_data_zipfile = File.createTempFile(
-            Long.toString(System.nanoTime()) + '_gokb_','_refinedata.zip',null
-            );
-        f.transferTo(temp_data_zipfile)
-        def parsed_project_file = [:]
-        ingestService.extractRefineDataZip (temp_data_zipfile, parsed_project_file)
-        rules = suggestRulesFromParsedData ( parsed_project_file, provider )
-
-      } finally {
-        if ( temp_data_zipfile ) {
-          try {
-            temp_data_zipfile.delete();
-          }
-          catch ( Throwable t ) {
-          }
-        }
-      }
-    } else {
-      log.debug("No dataZip file request attribute supplied.")
-    }
-
-    apiReturn ( rules )
+  def getValidationConfig() {
+    apiReturn ( grailsApplication.config.validation )
   }
 
-  private def suggestRulesFromParsedData (parsed_project_file, provider) {
-    log.debug ("Suggesting rules from parsed data.")
-    try {
-      def possible_rules = ingestService.findRules(parsed_project_file, provider )
-      return possible_rules
-    }
-    catch ( Exception e ) {
-      log.error("Problem trying to match rules", e)
-    }
+  def index() {
+    
+    // The api doesn't have a default page.
+    redirect(controller: 'home', action:'index');
+  }
+
+  /**
+   * Check if the api is up. Just return true.
+   */
+  def isUp() {
+    apiReturn(["isUp" : true])
   }
 
   @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
@@ -848,7 +512,280 @@ class ApiController {
       apiReturn ([])
     }
   }
-  
+
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  def projectCheckin() {
+
+    // Get the current user from the security service.
+    User user = springSecurityService.currentUser
+
+    log.debug ("User ${user.getUsername()} attempting to check-in a project.")
+
+    def f = request.getFile('projectFile')
+
+    if (f && !f.empty) {
+      
+      boolean new_project = false;
+
+      // Get the project.
+      RefineProject project
+
+      if (params.projectID) {
+        log.debug("Lookup existing project: ${params.projectID}");
+        project = RefineProject.get(params.projectID)
+        // We might end up here if importing a project exported by someone else who is using a different
+        // DB.
+      } else {
+        // Creating new project.
+        log.debug("New project");
+        project = new RefineProject()
+        project.setCreatedBy(user)
+        project.setLastCheckedOutBy(user)
+        
+        new_project = true
+      }
+
+      if (project) {
+        // Provider?
+        if (params.provider) {
+          // Set the org too.
+          Org org = Org.get(params.provider)
+          if (org) {
+            log.debug("Setting provider to ${org.id}.");
+            project.provider = org
+          }
+        }
+        
+        if (params.source) {
+          // Need to set the source here.
+          Source src = componentLookupService.lookupComponent(params.source)
+          
+          // Replace the component regex to just leave the string, and set as the name.
+          src.name = params.source.replaceAll("\\:\\:\\{[^\\}]*\\}", "")
+          
+          // Set the source of this project.
+          project.setSource(src)
+          
+          // Save the object.
+          src.save (failOnError:true)
+          project.save(failOnError:true, flush:true)
+        }
+
+        // Generate a filename...
+        def fileName = "project-${randomUUID()}.tar.gz"
+
+        // Save the file.
+        f.transferTo(new File(grailsApplication.config.project_dir + fileName))
+
+        // Set the file property.
+        project.setFile(fileName)
+
+        // Update other project properties.
+        if (params.hash) project.setHash(params.hash)
+        if (params.description) project.setDescription(params.description)
+        if (params.name) project.setName(params.name)
+        project.setProjectStatus(RefineProject.Status.CHECKED_IN)
+
+        //		project.save()
+
+        //		project.setLastCheckedOutBy(null)
+        project.setLocalProjectID(null)
+        project.setModified(new Date())
+        project.setModifiedBy(user)
+        if (params.notes) project.setNotes(params.notes)
+
+        // Parse the uploaded project.. We do this here because the parsed project data will be needed for
+        // suggesting rules or validation.
+        log.debug("Parsing refine project");
+        def parsed_project_file = ingestService.extractRefineproject(project.file)
+
+        if ( parsed_project_file == null )
+          throw new Exception("Problem parsing project file");
+          
+        // We now need to save the embeded source-file (if one is present)
+        if (new_project) {
+          log.debug("First time checking in the project. Let's add the source file.")
+          final String source_file_str = parsed_project_file?.metadata?.customMetadata?."source-file"
+          if (source_file_str) {
+            
+            log.debug("Found source file in metadata. Decoding and adding to project.")
+            // We need to decode it (base64).
+            def source_tgz = Base64.decodeBase64(source_file_str)
+            project.setSourceFile(source_tgz)
+          }
+        }
+
+        project.possibleRulesString = suggestRulesFromParsedData (parsed_project_file, project.provider) as JSON
+
+        // Make sure we null the progress...
+        project.setProgress(null)
+
+        // Save and flush the project
+        project.save(flush:true, failOnError:true)
+
+        if (params.ingest) {
+
+          // Is this an incremental update.
+          boolean incremental = (params.boolean("incremental") != false)
+
+          // Try and ingest the project too!
+          projectIngest(project,parsed_project_file,incremental, user)
+        }
+
+        // Return the project data.
+        apiReturn(project.collect(TRANSFORMER_PROJECT))
+        return
+      }
+    } else if (params.projectID) {
+
+      // Check in with no changes. (In effect we are just removing the lock)
+      def project = RefineProject.get(params.projectID)
+      if (project) {
+        // Remove lock properties and return the project state.
+        project.setProjectStatus(RefineProject.Status.CHECKED_IN)
+        //		project.setCheckedOutBy(null)
+        project.setLocalProjectID(0)
+        project.save(flush: true, failOnError: true)
+
+        apiReturn(project.collect(TRANSFORMER_PROJECT))
+        return
+      }
+    }
+
+    // Send 404 if not found.
+    response.status = 404;
+  }
+
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  def projectCheckout() {
+
+    // Get the current user from the security service.
+    User user = springSecurityService.currentUser
+
+    log.debug ("User ${user.getUsername()} attempting to check-out a project.")
+    if (params.projectID) {
+
+      // Get the project.
+      def project = RefineProject.get(params.projectID)
+
+      if (project) {
+
+        if (project.getProjectStatus() != RefineProject.Status.CHECKED_OUT) {
+
+          // Get the file and send the file to the client.
+          def file = new File(grailsApplication.config.project_dir + project.file)
+
+          // Send the file.
+          response.setContentType("application/x-gzip")
+          response.setHeader("Content-disposition", "attachment;filename=${file.getName()}")
+          response.outputStream << file.newInputStream()
+
+          // Set the checkout details.
+          //		  def chOut = (params.checkOutName ?: "No Name Given") +
+          //			  " (" + (params.checkOutEmail ?: "No Email Given") + ")"
+          //		  project.setCheckedOutBy(chOut)
+          project.setLastCheckedOutBy(user)
+          project.setProjectStatus(RefineProject.Status.CHECKED_OUT)
+          //		  project.setCheckedIn(false)
+          project.setLocalProjectID(params.long("localProjectID"))
+          return
+        } else {
+          // Project already checked out.
+          log.debug ("Project already checked out")
+        }
+      }
+    }
+
+    // Send 404 if not found.
+    response.status = 404;
+  }
+
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  def projectDataValid() {
+
+    log.debug("Try to validate data in zip file.")
+    def f = request.getFile('dataZip')
+    def validationResult = [:]
+
+    if (f && !f.empty) {
+
+      // Save the file temporarily...
+      def temp_data_zipfile
+      try {
+        temp_data_zipfile = File.createTempFile(
+            Long.toString(System.nanoTime()) + '_gokb_','_refinedata.zip',null
+            )
+        f.transferTo(temp_data_zipfile)
+        def parsed_project_file = [:]
+        ingestService.extractRefineDataZip(temp_data_zipfile, parsed_project_file)
+
+        log.debug("Validate the data in the zip");
+        validationResult = ingestService.validate(parsed_project_file)
+
+      } finally {
+        if ( temp_data_zipfile ) {
+          try {
+            temp_data_zipfile.delete();
+          }
+          catch ( Throwable t ) {
+          }
+        }
+      }
+    } else {
+      log.debug("No dataZip file request attribute supplied.")
+    }
+
+    apiReturn ( validationResult )
+  }
+
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  private def projectIngest (RefineProject project, parsed_data, boolean incremental, User user) {
+    log.debug("projectIngest....");
+
+    if (project.getProjectStatus() == RefineProject.Status.CHECKED_IN) {
+
+      log.debug("Validate the project");
+      def validationResult = ingestService.validate(parsed_data)
+      project.lastValidationResult = validationResult.messages
+
+      if ( validationResult.status == true ) {
+        ingestService.extractRules(parsed_data, project)
+        doIngest(parsed_data, project, incremental, user)
+      }
+      else {
+        log.debug("validation failed, not ingesting");
+      }
+    } else {
+      log.debug ("Attempted to ingest checked-out project.")
+    }
+  }
+
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  def projectIngestProgress() {
+    if (params.projectID) {
+
+      // Get the project.
+      def project = RefineProject.get(params.projectID)
+      
+      // Also checking job 1...
+      log.debug ("Job 1: " + concurrencyManagerService.getJob(1)?.progress ?: "Undefined")
+
+      if (project) {
+        // Return the progress.
+        apiReturn ( project.collect(TRANSFORMER_PROJECT) )
+        return
+      }
+
+      // Return a 404.
+      response.status = 404;
+    }
+  }
+
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  def projectList() {
+    apiReturn (RefineProject.findAll().collect(TRANSFORMER_PROJECT))
+  }
+
   @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
   def quickCreate() {
     // Get the type of component we are going to attempt to create.
@@ -901,26 +838,58 @@ class ApiController {
     }
   }
   
-  def checkUpdate () {
-    def result = refineService.checkUpdate(params."current-version" ?: request.getHeader("GOKb-version"))
-    apiReturn (result)
+  @Secured(['ROLE_SUPERUSER', 'ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def refdata() {
+    def result = [:];
+
+    // Should take a type parameter and do the right thing. Initially only do one type
+    switch ( params.type ) {
+      case 'cp' :
+        def oq = Org.createCriteria()
+        def orgs = oq.listDistinct {
+          roles {
+            "owner" {
+              eq('desc','Org.Role');
+            }
+            eq('value','Content Provider');
+          }
+          order("name", "asc")
+        }
+        result.datalist=new java.util.ArrayList()
+        orgs.each { o ->
+          result.datalist.add([ "value" : "${o.id}", "name" : (o.name) ])
+        }
+        break;
+      default:
+        break;
+    }
+    apiReturn(result)
   }
   
-  def downloadUpdate () {
-    
-    // Grab the download.
-    def file = refineService.extensionDownloadFile (params."requested-version")
-    if (file) {
-      // Send the file.
-      response.setContentType("application/x-gzip")
-      response.setHeader("Content-disposition", "attachment;filename=${file.getName()}")
-      response.outputStream << file.newInputStream()
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  def saveOperations() {
+    // Get the operations as a list.
+
+    // The line below looks like it replaces like with like but because the
+    // second parameter is a regex it gets double escaped.
+    def ops = params.operations.replaceAll("\\\\\"", "\\\\\"")
+    ops = JSON.parse(params.operations)
+
+    // Save each operation to the database
+    ops.each {
+      try {
+        new RefineOperation(
+            description : it['operation']['description'],
+            operation : new LinkedHashMap(it['operation'])
+            ).save(failOnError : true)
+      } catch (Exception e) {
+        log.error(e)
+      }
     }
 
-    // Send not found.
-    response.status = 404
+    apiReturn( null, "Succesfully saved the operations.")
   }
-
+  
   // this is used as an entrypoint for single page apps based on frameworks like angular.
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def search() {
@@ -959,26 +928,82 @@ class ApiController {
 
     render result as JSON
   }
+  
+  /**
+   * Suggest the rules that might apply to the data.txt within this zip file.
+   * @param dataZip
+   */
+  @Secured(['ROLE_SUPERUSER', 'ROLE_REFINEUSER', 'IS_AUTHENTICATED_FULLY'])
+  def suggestRulesFromData() {
 
-  def private doQuery (qbetemplate, params, result) {
-    log.debug("doQuery ${result}");
-    def target_class = grailsApplication.getArtefact("Domain",qbetemplate.baseclass);
-    com.k_int.HQLBuilder.build(grailsApplication, qbetemplate, params, result, target_class, genericOIDService)
-    def resultrows = []
+    log.debug ("Attempting to get rule suggestions from data zip.")
 
-    log.debug("process recset..");
-    int seq = result.offset
-    result.recset.each { rec ->
-      // log.debug("process rec..");
-      def response_row = [:]
-      response_row['__oid'] = rec.class.name+':'+rec.id
-      response_row['__seq'] = seq++
-      qbetemplate.qbeConfig.qbeResults.each { r ->
-        response_row[r.heading] = groovy.util.Eval.x(rec, 'x.' + r.property)
+    def f = request.getFile('dataZip')
+    def rules = [:]
+    if (f && !f.empty) {
+      Org provider = null;
+      if (params.providerID) {
+        provider = Org.get(params.providerID)
+        log.debug("Provider to use in rules is: '" + provider.name + "'")
       }
-      resultrows.add(response_row);
+
+      def temp_data_zipfile
+      try {
+
+        temp_data_zipfile = File.createTempFile(
+            Long.toString(System.nanoTime()) + '_gokb_','_refinedata.zip',null
+            );
+        f.transferTo(temp_data_zipfile)
+        def parsed_project_file = [:]
+        ingestService.extractRefineDataZip (temp_data_zipfile, parsed_project_file)
+        rules = suggestRulesFromParsedData ( parsed_project_file, provider )
+
+      } finally {
+        if ( temp_data_zipfile ) {
+          try {
+            temp_data_zipfile.delete();
+          }
+          catch ( Throwable t ) {
+          }
+        }
+      }
+    } else {
+      log.debug("No dataZip file request attribute supplied.")
     }
-    resultrows
+
+    apiReturn ( rules )
   }
 
+  private def suggestRulesFromParsedData (parsed_project_file, provider) {
+    log.debug ("Suggesting rules from parsed data.")
+    try {
+      def possible_rules = ingestService.findRules( parsed_project_file, provider )
+      return possible_rules
+    }
+    catch ( Exception e ) {
+      log.error("Problem trying to match rules", e)
+    }
+  }
+
+  /**
+   * Checks to see if the version of the refine module is too low to access this service.
+   * @return
+   */
+  private versionCheck() {
+    if ( params.skipVC ) {
+    }
+    else {
+      def gokbVersion = request.getHeader("GOKb-version")
+      def serv_url = grailsApplication.config.extensionDownloadUrl ?: 'http://gokb.kuali.org'
+      
+      if (gokbVersion != 'development') {
+        if (!gokbVersion || TextUtils.versionCompare(gokbVersion, grailsApplication.config.refine_min_version) < 0) {
+          apiReturn([errorType : "versionError"], "The refine extension you are using is not compaitble with this instance of the service.",
+          "error")
+          
+          return false
+        }
+      }
+    }
+  }
 }

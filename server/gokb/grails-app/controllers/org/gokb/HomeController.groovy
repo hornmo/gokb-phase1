@@ -32,9 +32,13 @@ class HomeController {
   }
 
   def index () {
+    
+    // If the user is signed in then the Dashboard action is used.
     if (springSecurityService.currentUser) {
       forward (action: "dashboard", params: (params))
     }
+    
+    // Else it just drops through to show the index template.
   }
   
   def calculate() {
