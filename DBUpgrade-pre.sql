@@ -1,1 +1,1 @@
-update kbcomponent set class='org.gokb.cred.BookInstance' where class='org.gokb.cred.TitleInstance'
+update kbcomponent set class='org.gokb.cred.JournalInstance' where class='org.gokb.cred.TitleInstance'

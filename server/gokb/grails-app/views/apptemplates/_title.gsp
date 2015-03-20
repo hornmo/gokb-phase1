@@ -3,7 +3,7 @@
     <g:annotatedLabel owner="${d}" property="name">Title</g:annotatedLabel>
   </dt>
   <dd>
-    ${d.name}
+    TITLE: ${d.name}
     (Modify title through variants below)
   </dd>
 
