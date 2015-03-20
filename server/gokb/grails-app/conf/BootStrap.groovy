@@ -38,7 +38,7 @@ class BootStrap {
 
   def init = { servletContext ->
 
-    log.debug("Init")
+    log.info("Init")
     
     cleanUpMissingDomains ()
     
