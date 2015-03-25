@@ -18,6 +18,7 @@ class TitleInstance extends KBComponent {
   Date publishedFrom
   Date publishedTo
 //  String imprint
+  def genericOIDService
 
   private static refdataDefaults = [
     "medium"		: "Journal",
@@ -176,13 +177,29 @@ class TitleInstance extends KBComponent {
   /**
    *  refdataFind generic pattern needed by inplace edit taglib to provide reference data to typedowns and other UI components.
    *  objects implementing this method can be easily located and listed / selected
+   * value="${RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)}"
+   *  filter1="status|!=|${refvalue.getClass().name}:${refvalue.id}"/>
    */
+
+
+
   static def refdataFind(params) {
     def result = [];
     def ql = null;
-    // ql = TitleInstance.findAllByNameIlike("${params.q}%",params)
+
+    // By default ignore deleted values
+    def deleted_refValue = RefdataCategory.lookupOrCreate(KBComponent.RD_STATUS, KBComponent.STATUS_DELETED)
+    def filter = ""
+    def query_params = ["${params.q?.toLowerCase()}%"]
+    query_params += "${params.q}%"
+    query_params += deleted_refValue
+    
+    if(params.filter1){
+        filter = KBComponent.refdataFindFilter(params.filter1,query_params)
+    }
     // Return all titles where the title matches (Left anchor) OR there is an identifier for the title matching what is input
-    ql = TitleInstance.executeQuery("select t.id, t.name from TitleInstance as t where lower(t.name) like ? or exists ( select c from Combo as c where c.fromComponent = t and c.toComponent in ( select id from Identifier as id where id.value like ? ) )", ["${params.q?.toLowerCase()}%","${params.q}%"],[max:20]);
+    def query = "select t.id, t.name from TitleInstance as t where (lower(t.name) like ? or exists ( select c from Combo as c where c.fromComponent = t and c.toComponent in ( select id from Identifier as id where id.value like ? ) ) ) and t.status!=?" + filter
+    ql = TitleInstance.executeQuery(query, query_params,[max:20]);
 
     if ( ql ) {
       ql.each { t ->

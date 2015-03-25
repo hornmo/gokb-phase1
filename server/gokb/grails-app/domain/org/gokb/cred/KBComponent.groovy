@@ -916,5 +916,22 @@ abstract class KBComponent {
   public String getDisplayName() {
     return name
   }
+  @Transient
+  static def refdataFindFilter(filter_param,query_params){
+    def result = [:]
+    def filter_components = filter_param.split("[|]")
+    def property = filter_components[0]
+    def operation = filter_components[1]
+    def value_components = filter_components[2].split(":")
+    def value
+    if(value_components.size()==2){
+       value = Class.forName(value_components[0], false,  Thread.currentThread().contextClassLoader).get(value_components[1])
+    }else{
+      value = filter_components[2]
+    }
+    def filter = " and t.${property}${operation}? "
+    query_params.add(value)
+    return filter
+  }
 
 }
