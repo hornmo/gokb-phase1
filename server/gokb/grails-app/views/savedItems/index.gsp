@@ -1,5 +1,7 @@
 <h3>Saved Items</h3>
 <hr/>
+adaklsdjfalks
+Num saved items : ${saved_items.size()}
 <div class="container">
   <div class="row threeColGrid">
     <g:each in="${saved_items}" var="itm">
