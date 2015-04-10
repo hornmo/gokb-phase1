@@ -1135,6 +1135,7 @@ globalSearchTemplates = [
       qbeGlobals:[
       ],
       qbeResults:[
+        [heading:'Code', property:'code', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
         [heading:'Description', property:'description', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
       ]
     ]
