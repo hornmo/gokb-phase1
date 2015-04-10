@@ -1119,6 +1119,26 @@ globalSearchTemplates = [
       ]
     ]
   ],
+  'DSCategory':[
+    baseclass:'org.gokb.cred.DSCategory',
+    title:'DS Categories',
+    group:'Tertiary',
+    qbeConfig:[
+      qbeForm:[
+        [
+          prompt:'Description',
+          qparam:'qp_descr',
+          placeholder:'Description',
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'description', 'wildcard':'B']
+        ],
+      ],
+      qbeGlobals:[
+      ],
+      qbeResults:[
+        [heading:'Description', property:'description', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+      ]
+    ]
+  ],
 ]
 
 
@@ -1144,7 +1164,8 @@ globalDisplayTemplates = [
   'org.gokb.cred.DataFile': [ type:'staticgsp', rendername:'datafile' ],
   'org.gokb.cred.KBDomainInfo': [ type:'staticgsp', rendername:'domainInfo' ],
   'org.gokb.cred.Imprint': [ type:'staticgsp', rendername:'imprint' ],
-  'org.gokb.cred.IdentifierNamespace': [ type:'staticgsp', rendername:'identifier_namespace' ]
+  'org.gokb.cred.IdentifierNamespace': [ type:'staticgsp', rendername:'identifier_namespace' ],
+  'org.gokb.cred.DSCategory': [ type:'staticgsp', rendername:'ds_category' ]
 ]
 
 permNames = [

@@ -4,16 +4,20 @@ import javax.persistence.Transient
 
 class DSCategory {
 
+  String code
   String description
 
   static mapping = {
+    code column:'dscat_code'
     description column:'dscat_desc'
   }
 
   static constraints = {
-    url(nullable:true, blank:true)
+    code(nullable:false, blank:false)
+    description(nullable:false, blank:false)
   }
 
+ static def refdataFind(params) {
     def result = [];
     def ql = null;
     ql = DSCategory.findAllByDescriptionIlike("${params.q}%",params)

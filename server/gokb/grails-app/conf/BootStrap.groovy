@@ -62,6 +62,18 @@ class BootStrap {
     def suRole = Role.findByAuthority('ROLE_SUPERUSER') ?: new Role(authority: 'ROLE_SUPERUSER', roleType:'global').save(failOnError: true)
     def refineUserRole = Role.findByAuthority('ROLE_REFINEUSER') ?: new Role(authority: 'ROLE_REFINEUSER', roleType:'global').save(failOnError: true)
 
+    [ 'lic':'Licensing',
+      'access':'Access',
+      'formats':'Formats',
+      'drm':'DRM',
+      'devices':'Devices',
+      'access':'Accessibility', 
+      'pricing':'Pricing', 
+      'platform':'Platform UX',
+      'other':'Other'].each { k,v ->
+      def dscat = DSCategory.findByCode(k) ?: new DSCategory(code:k, description: v).save(failOnError: true)
+    }
+
     log.debug("Create admin user...");
     def adminUser = User.findByUsername('admin')
     if ( ! adminUser ) {
