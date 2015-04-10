@@ -74,6 +74,21 @@ class BootStrap {
       def dscat = DSCategory.findByCode(k) ?: new DSCategory(code:k, description: v).save(failOnError: true)
     }
 
+    [ [ 'lic', 'Licensing Criterion 1', 'A licesing criterion', 'LC1 Explanation' ],
+      [ 'lic', 'Licensing Criterion 2', 'A licesing criterion', 'LC2 Explanation' ],
+      [ 'lic', 'Licensing Criterion 3', 'A licesing criterion', 'LC3 Explanation' ],
+      [ 'access', 'Access 1', 'Access crit desc', 'AC1 Explanation' ] ].each { crit ->
+      
+      def cat = DSCategory.findByCode(crit[0]);
+      def c = DSCriterion.findByOwnerAndTitle(cat, crit[1]) ?: new DSCriterion(
+                                                                               owner:cat,
+                                                                               title:crit[1],
+                                                                               description:crit[2],
+                                                                               explanation:crit[3]).save(failOnError: true)
+    }
+      
+     
+
     log.debug("Create admin user...");
     def adminUser = User.findByUsername('admin')
     if ( ! adminUser ) {
