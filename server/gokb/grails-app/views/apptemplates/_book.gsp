@@ -156,26 +156,34 @@
       <li><a href="#history" data-toggle="tab">Add to Title
           History</a></li>
     </g:if>
+
     <li><a href="#identifiers" data-toggle="tab">Identifiers <span
         class="badge badge-warning">
           ${d.ids?.size()}
       </span></a></li>
+
     <li><a href="#publishers" data-toggle="tab">Publishers <span
         class="badge badge-warning">
           ${d.getCombosByPropertyNameAndStatus('publisher',params.publisher_status)?.size()}
       </span></a></li>
+
     <li><a href="#availability" data-toggle="tab">Availability <span
         class="badge badge-warning">
           ${d.tipps?.size()}
       </span></a></li>
+
     <li><a href="#addprops" data-toggle="tab">Custom Fields <span
         class="badge badge-warning">
           ${d.additionalProperties?.size()}
       </span></a></li>
+
     <li><a href="#review" data-toggle="tab">Review Tasks <span
         class="badge badge-warning">
           ${d.reviewRequests?.size()}
       </span></a></li>
+
+    <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
+
   </ul>
   <div id="my-tab-content" class="tab-content">
     <div class="tab-pane active" id="titledetails">
@@ -400,6 +408,10 @@
     <div class="tab-pane" id="review">
       <g:render template="revreqtab" contextPath="../apptemplates"
         model="${[d:d]}" />
+    </div>
+
+    <div class="tab-pane" id="ds">
+      <g:render template="dstab" contextPath="../apptemplates" model="${[d:d]}" />
     </div>
 
   </div>
