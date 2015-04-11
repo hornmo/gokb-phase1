@@ -18,6 +18,14 @@ class DSCriterion {
     explanation column:'dscrit_expl'
   }
 
+  static hasMany = [
+    appliedCriterion : DSAppliedCriterion
+  ]
+
+  static mappedBy = [
+    appliedCriterion : 'criterion'
+  ]
+
   static constraints = {
     curator(nullable:true, blank:false)
     owner(nullable:false, blank:false)

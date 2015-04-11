@@ -917,4 +917,21 @@ abstract class KBComponent {
     return name
   }
 
+  @Transient
+  def getDecisionSupportLines() {
+    // Return an array consisting of DS Categories, in each category the Criterion and then null or the currently selected value
+    // def criterion = DSCriterion.executeQuery('select c,c,c from DSCriterion as c');
+    // def criterion = DSCriterion.executeQuery('select c, dsac from DSCriterion as c left join c.appliedCriterion as dsac where dsac.appliedTo.id = ?',[this.id]);
+    def criterion = null;
+
+    // N.B. for steve.. saying "if id != null" always fails - id is hibernate injected - should investigate this
+    if ( getId() != null ) {
+      // N.B. Long standing bug in hibernate means that dsac.appliedTo = ? throws a 'can only ref props in the driving table' exception
+      // Workaround is to use the id directly
+      criterion = DSCriterion.executeQuery('select c, dsac from DSCriterion as c left outer join c.appliedCriterion as dsac with dsac.appliedTo.id = ?',getId());
+    }
+    else {
+    }
+    return criterion
+  }
 }
