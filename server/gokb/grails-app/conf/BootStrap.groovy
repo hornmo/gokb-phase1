@@ -71,8 +71,8 @@ class BootStrap {
       'drm':'DRM', 
       'format':'Format', 
       'lic':'Licensing',
-      'other':'Other'
-      'ref':'Referencing'
+      'other':'Other',
+      'ref':'Referencing',
     ].each { k,v ->
       def dscat = DSCategory.findByCode(k) ?: new DSCategory(code:k, description: v).save(failOnError: true)
     }
@@ -761,6 +761,10 @@ class BootStrap {
 
     RefdataCategory.lookupOrCreate('RDFDataType', 'uri').save()
     RefdataCategory.lookupOrCreate('RDFDataType', 'string').save()
+
+    RefdataCategory.lookupOrCreate('RAG', 'Red').save()
+    RefdataCategory.lookupOrCreate('RAG', 'Amber').save()
+    RefdataCategory.lookupOrCreate('RAG', 'Green').save()
 
   }
 }

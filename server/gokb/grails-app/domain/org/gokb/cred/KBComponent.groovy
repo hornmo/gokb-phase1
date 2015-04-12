@@ -936,7 +936,7 @@ abstract class KBComponent {
         if ( result[cat_code] == null ) 
           result[cat_code] = [description:c[0].owner.description,criterion:[]]
 
-        result[cat_code].criterion.add([c[0].title, c[1]])
+        result[cat_code].criterion.add([c[0].title, c[1]?.value?.value])
       }
     }
     else {
