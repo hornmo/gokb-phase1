@@ -936,7 +936,11 @@ abstract class KBComponent {
         if ( result[cat_code] == null ) 
           result[cat_code] = [description:c[0].owner.description,criterion:[]]
 
-        result[cat_code].criterion.add([c[0].title, c[1]?.value?.value])
+        // Add criteria title, current value if present, a string of componentId:CriteriaId (For setter/getter)
+        result[cat_code].criterion.add([c[0].title, 
+                                        c[1]?.value?.value, 
+                                        getId(),
+                                        c[0].id])
       }
     }
     else {
