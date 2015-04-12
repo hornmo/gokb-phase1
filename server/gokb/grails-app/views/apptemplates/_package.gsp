@@ -67,9 +67,8 @@
       <li class="active"><a href="#packagedetails" data-toggle="tab">Package Details</a></li>
       <li><a href="#titledetails" data-toggle="tab">Titles <span class="badge badge-warning"> ${d.tipps?.size()} </span></a></li>
       <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d.ids?.size()} </span></a></li>      
-      <li><a href="#altnames" data-toggle="tab">Alternate Names 
-        <span class="badge badge-warning"> ${d.variantNames?.size()}</span>
-      </a></li>
+      <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames?.size()}</span></a></li>
+      <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
     </ul>
 
     <div id="my-tab-content" class="tab-content">
@@ -132,6 +131,11 @@
                   [expr:'toComponent.namespace.value', colhead:'Namespace'],
                   [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
       </div>
+
+      <div class="tab-pane" id="ds">
+        <g:render template="dstab" contextPath="../apptemplates" model="${[d:d]}" />
+      </div>
+
 
     </div>
     <g:render template="componentStatus" contextPath="../apptemplates"
