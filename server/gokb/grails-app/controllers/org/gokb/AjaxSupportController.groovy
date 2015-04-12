@@ -480,6 +480,22 @@ class AjaxSupportController {
   def appliedCriterion() {
     def result = [status:'OK']
     log.debug(params);
+
+    // val:r, comp:139862, crit:1
+    def component = KBComponent.get(params.comp);
+    def crit = DSCriterion.get(params.crit);
+
+    def current_applied = DSAppliedCriterion.findByAppliedToAndCriterion(component,crit);
+
+    if ( current_applied == null ) {
+      log.debug("Create new applied criterion");
+    }
+    else {
+      // RefdataValue value
+      log.debug("Update existing");
+    }
+
+
     return result as JSON
   }
 }
