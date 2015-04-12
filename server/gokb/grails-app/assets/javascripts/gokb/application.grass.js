@@ -22,7 +22,8 @@
 // Global namespace for GOKb functions.
 window.gokb = {
   "config" : {
-    "lookupURI" : "/gokb/ajaxSupport/lookup"
+    "lookupURI" : "/gokbLabs/ajaxSupport/lookup",
+    "baseUrl" : "/gokbLabs",
   }
 };
 

@@ -475,4 +475,11 @@ class AjaxSupportController {
     }
     result;
   }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def appliedCriterion() {
+    def result = [status:'OK']
+    log.debug(params);
+    return result as JSON
+  }
 }

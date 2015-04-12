@@ -53,5 +53,15 @@
     $('#'+component_id+'_'+criterion_id+'_g').css('color','grey');
 
     $('#'+component_id+'_'+criterion_id+'_'+v).css('color',c);
+
+    $.ajax({
+      // libs and culture: 0894-8631
+      url: gokb.config.baseUrl+'/ajaxSupport/appliedCriterion?comp='+component_id+'&crit='+criterion_id+'&val='+v,
+      dataType:"jsonp",
+      crossDomain: true
+    }).done(function(data) {
+      alert(data);
+    });
+
   }
 </asset:script>
