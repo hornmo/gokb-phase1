@@ -484,15 +484,20 @@ class AjaxSupportController {
     // val:r, comp:139862, crit:1
     def component = KBComponent.get(params.comp);
     def crit = DSCriterion.get(params.crit);
+    def lookup = [ 'r' : 'Red', 'a' : 'Amber', 'g' : 'Green' ]
+    def rdv = RefdataCategory.lookupOrCreate('RAG', lookup[params.val]).save()
 
     def current_applied = DSAppliedCriterion.findByAppliedToAndCriterion(component,crit);
 
     if ( current_applied == null ) {
       log.debug("Create new applied criterion");
+      current_applied = new DSAppliedCriterion(appliedTo:component, criterion:crit, value: rdv).save(failOnError:true)
     }
     else {
       // RefdataValue value
       log.debug("Update existing");
+      current_applied.value=rdv
+      current_applied.save(failOnError:true)
     }
 
 

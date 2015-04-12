@@ -15,21 +15,19 @@
         <tr>
           <td>&nbsp;&nbsp;<h5>${c[0]}</h5></td>
           <td>
-            ${c[1]} 
-
             <i id="${c[2]}_${c[3]}_q" class="fa fa-question-circle fa-2x" style="color:${c[1]==null?'blue':'grey'};"></i>&nbsp;
 
             <a href='javascript:setAppliedCriterion("${c[2]}","${c[3]}","r","red");'><i id="${c[2]}_${c[3]}_r" 
                                                                           class="fa fa-times-circle fa-2x" 
-                                                                          style="color:${c[1]=='red'?'red':'grey'};"></i></a> &nbsp;
+                                                                          style="color:${c[1]=='Red'?'red':'grey'};"></i></a> &nbsp;
 
             <a href='javascript:setAppliedCriterion("${c[2]}","${c[3]}","a","#FFBF00");'><i id="${c[2]}_${c[3]}_a" 
                                                                           class="fa fa-info-circle fa-2x" 
-                                                                          style="color:${c[1]=='amber'?'#FFBF00':'grey'};"></i></a>&nbsp;
+                                                                          style="color:${c[1]=='Amber'?'#FFBF00':'grey'};"></i></a>&nbsp;
 
             <a href='javascript:setAppliedCriterion("${c[2]}","${c[3]}","g","green");'><i id="${c[2]}_${c[3]}_g" 
                                                                           class="fa fa-check-circle fa-2x" 
-                                                                          style="color:${c[1]=='green'?'green':'grey'};"></i></a>
+                                                                          style="color:${c[1]=='Green'?'green':'grey'};"></i></a>
           </td>
           <td>
             <form class="form-inline">
