@@ -8,6 +8,14 @@ class DSAppliedCriterion {
   DSCriterion criterion
   RefdataValue value
 
+  static hasMany = [
+    notes: DSNote
+  ]
+
+  static mappedBy = [
+    notes: 'criterion'
+  ]
+
   static mapping = {
     appliedTo column:'dsac_component_fk'
     criterion column:'dsac_crit_fk'
