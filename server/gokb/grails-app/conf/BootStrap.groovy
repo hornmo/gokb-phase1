@@ -62,23 +62,66 @@ class BootStrap {
     def suRole = Role.findByAuthority('ROLE_SUPERUSER') ?: new Role(authority: 'ROLE_SUPERUSER', roleType:'global').save(failOnError: true)
     def refineUserRole = Role.findByAuthority('ROLE_REFINEUSER') ?: new Role(authority: 'ROLE_REFINEUSER', roleType:'global').save(failOnError: true)
 
-    [ 'lic':'Licensing',
-      'access':'Access',
-      'formats':'Formats',
-      'drm':'DRM',
-      'devices':'Devices',
-      'access':'Accessibility', 
-      'pricing':'Pricing', 
-      'platform':'Platform UX',
-      'other':'Other'].each { k,v ->
+    [ 
+      'accessdl':'Access - Download', 
+      'accessol':'Access - Read Online',
+      'accbildl':'Accessibility - Download', 
+      'accbilol':'Accessibility - Read Online', 
+      'device':'Device Requirements for Download',
+      'drm':'DRM', 
+      'format':'Format', 
+      'lic':'Licensing',
+      'other':'Other'
+      'ref':'Referencing'
+    ].each { k,v ->
       def dscat = DSCategory.findByCode(k) ?: new DSCategory(code:k, description: v).save(failOnError: true)
     }
 
-    [ [ 'lic', 'Licensing Criterion 1', 'A licesing criterion', 'LC1 Explanation' ],
-      [ 'lic', 'Licensing Criterion 2', 'A licesing criterion', 'LC2 Explanation' ],
-      [ 'lic', 'Licensing Criterion 3', 'A licesing criterion', 'LC3 Explanation' ],
-      [ 'access', 'Access 1', 'Access crit desc', 'AC1 Explanation' ] ].each { crit ->
-      
+    [ 
+      [ 'format',     'Downloadable PDF', '', '' ],
+      [ 'format',     'Embedded PDF', '', '' ],
+      [ 'format',     'ePub', '', '' ],
+      [ 'format',     'OeB', '', '' ],
+      [ 'accessol',   'Book Navigation', '', '' ],
+      [ 'accessol',   'Table of contents navigation', '', '' ],
+      [ 'accessol',   'Pagination', '', '' ],
+      [ 'accessol',   'Page Search', '', '' ],
+      [ 'accessol',   'Search Within Book', '', '' ],
+      [ 'accessdl',   'Download Extent', '', '' ],
+      [ 'accessdl',   'Download Time', '', '' ],
+      [ 'accessdl',   'Download Reading View Navigation', '', '' ],
+      [ 'accessdl',   'Table of Contents Navigation', '', '' ],
+      [ 'accessdl',   'Pagination', '', '' ],
+      [ 'accessdl',   'Page Search', '', '' ],
+      [ 'accessdl',   'Search Within Book', '', '' ],
+      [ 'accessdl',   'Read Aloud or Listen Option', '', '' ],
+      [ 'device',     'General', '', '' ],
+      [ 'device',     'Android', '', '' ],
+      [ 'device',     'iOS', '', '' ],
+      [ 'device',     'Kindle Fire', '', '' ],
+      [ 'device',     'PC', '', '' ],
+      [ 'drm',        'Copying', '', '' ],
+      [ 'drm',        'Printing', '', '' ],
+      [ 'accbilol',   'Dictionary', '', '' ],
+      [ 'accbilol',   'Text Resize', '', '' ],
+      [ 'accbilol',   'Change Reading Colour', '', '' ],
+      [ 'accbilol',   'Read aloud or Listen Option', '', '' ],
+      [ 'accbilol',   'Integrated Help', '', '' ],
+      [ 'accbildl',   'Copying', '', '' ],
+      [ 'accbildl',   'Printing', '', '' ],
+      [ 'accbildl',   'Add Notes', '', '' ],
+      [ 'accbildl',   'Dictionary', '', '' ],
+      [ 'accbildl',   'Text Resize', '', '' ],
+      [ 'accbildl',   'Change Reading Colour', '', '' ],
+      [ 'accbildl',   'Integrated Help', '', '' ],
+      [ 'accbildl',   'Other Accessibility features or Support', '', '' ],
+      [ 'ref',        'Export to bibliographic software', '', '' ],
+      [ 'ref',        'Sharing / Social Media', '', '' ],
+      [ 'other',      'Changes / Redevelopment in the near future', '', '' ],
+      [ 'lic',        'Number of users', '', '' ],
+      [ 'lic',        'Credit Payment Model', '', '' ],
+      [ 'lic',        'Publishers Included', '', '' ] 
+    ].each { crit ->
       def cat = DSCategory.findByCode(crit[0]);
       def c = DSCriterion.findByOwnerAndTitle(cat, crit[1]) ?: new DSCriterion(
                                                                                owner:cat,
