@@ -122,8 +122,7 @@
         </g:if>
       </div>
 
-     <g:render template="showVariantnames" contextPath="../tabTemplates"
-      model="${[d:displayobj, showActions:true]}" />
+      <g:render template="showVariantnames" contextPath="../tabTemplates" model="${[d:displayobj, showActions:true]}" />
 
       <div class="tab-pane" id="identifiers">
         <g:render template="combosByType" contextPath="../apptemplates"

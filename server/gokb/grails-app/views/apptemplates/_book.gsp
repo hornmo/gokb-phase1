@@ -146,21 +146,14 @@
 
 <div id="content">
   <ul id="tabs" class="nav nav-tabs">
-    <li class="active"><a href="#titledetails" data-toggle="tab">Title
-        Details</a></li>
-    <li><a href="#altnames" data-toggle="tab">Alternate Names 
-      <span class="badge badge-warning"> ${d.variantNames?.size()}</span>
-    </a></li>
+    <li class="active"><a href="#titledetails" data-toggle="tab">Title Details</a></li>
+    <li><a href="#altnames" data-toggle="tab">Alternate Names <span class="badge badge-warning"> ${d.variantNames?.size()}</span> </a></li>
         
     <g:if test="${ d.isEditable() }">
-      <li><a href="#history" data-toggle="tab">Add to Title
-          History</a></li>
+      <li><a href="#history" data-toggle="tab">Add to Title History</a></li>
     </g:if>
 
-    <li><a href="#identifiers" data-toggle="tab">Identifiers <span
-        class="badge badge-warning">
-          ${d.ids?.size()}
-      </span></a></li>
+    <li><a href="#identifiers" data-toggle="tab">Identifiers <span class="badge badge-warning"> ${d.ids?.size()} </span></a></li>
 
     <li><a href="#publishers" data-toggle="tab">Publishers <span
         class="badge badge-warning">
@@ -483,17 +476,6 @@
       ss.options[i].selected = true;
     }
   }
-
-
-  var hash = window.location.hash;
-  hash && $('ul.nav a[href="' + hash + '"]').tab('show');
-
-  $('.nav-tabs a').click(function (e) {
-    $(this).tab('show');
-    var scrollmem = $('body').scrollTop();
-    window.location.hash = this.hash;
-    $('html,body').scrollTop(scrollmem);
-  });
 
 
 </asset:script>
