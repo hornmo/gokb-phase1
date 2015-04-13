@@ -15,7 +15,7 @@
         <tr>
           <td style="vertical-align:top; white-space: nowrap;">&nbsp;&nbsp;${c[0]}</td>
           <td style="white-space: nowrap;">
-            <i id="${c[2]}_${c[3]}_r" class="fa fa-times-circle fa-2x" style="color:${(c[1]=='Unknown'||c[1]==null)?'blue':'grey'};"></i>&nbsp;
+            <i id="${c[2]}_${c[3]}_q" class="fa fa-question-circle fa-2x" style="color:${(c[1]=='Unknown'||c[1]==null)?'blue':'grey'};"></i>&nbsp;
 
             <a href='javascript:setAppliedCriterion("${c[2]}","${c[3]}","r","red");'><i id="${c[2]}_${c[3]}_r" 
                                                                           class="fa fa-times-circle fa-2x" 
