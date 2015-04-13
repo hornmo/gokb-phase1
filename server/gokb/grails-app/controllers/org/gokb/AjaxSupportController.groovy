@@ -479,7 +479,6 @@ class AjaxSupportController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def appliedCriterion() {
     def result = [status:'OK']
-    log.debug(params);
 
     // val:r, comp:139862, crit:1
     def component = KBComponent.get(params.comp);
@@ -490,12 +489,11 @@ class AjaxSupportController {
     def current_applied = DSAppliedCriterion.findByAppliedToAndCriterion(component,crit);
 
     if ( current_applied == null ) {
-      log.debug("Create new applied criterion");
+      // log.debug("Create new applied criterion");
       current_applied = new DSAppliedCriterion(appliedTo:component, criterion:crit, value: rdv).save(failOnError:true)
     }
     else {
-      // RefdataValue value
-      log.debug("Update existing");
+      // log.debug("Update existing");
       current_applied.value=rdv
       current_applied.save(failOnError:true)
     }
@@ -503,4 +501,27 @@ class AjaxSupportController {
 
     return result as JSON
   }
-}
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def criterionComment() {
+    log.debug('criterionComment:'+params);
+    def result = [status:'OK']
+    def idparts = params.comp.split('_');
+    log.debug(idparts);
+    if ( idparts.length == 2 ) {
+      def component = KBComponent.get(idparts[0]);
+      def crit = DSCriterion.get(idparts[1]);
+
+      def current_applied = DSAppliedCriterion.findByAppliedToAndCriterion(component,crit);
+
+      if ( current_applied == null ) {
+        // Create a new applied criterion to comment on
+        def rdv = RefdataCategory.lookupOrCreate('RAG', 'Unknown');
+        current_applied = new DSAppliedCriterion(appliedTo:component, criterion:crit, value: rdv).save(failOnError:true)
+      }
+     
+      log.debug("Found applied critirion ${current_applied} for ${idparts[0]} ${idparts[1]} ${component} ${crit}");
+    }
+    return result as JSON
+  }
+}  

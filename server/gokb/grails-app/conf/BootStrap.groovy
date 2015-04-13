@@ -762,6 +762,7 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('RDFDataType', 'uri').save()
     RefdataCategory.lookupOrCreate('RDFDataType', 'string').save()
 
+    RefdataCategory.lookupOrCreate('RAG', 'Unknown').save()
     RefdataCategory.lookupOrCreate('RAG', 'Red').save()
     RefdataCategory.lookupOrCreate('RAG', 'Amber').save()
     RefdataCategory.lookupOrCreate('RAG', 'Green').save()

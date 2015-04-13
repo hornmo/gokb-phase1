@@ -1,7 +1,7 @@
 <table class="table table-bordered">
   <thead>
     <tr>
-      <th id="44_33" style="color:pink;">Criterion</th>
+      <th>Criterion</th>
       <th>Value</th>
       <th>Notes</th>
     </tr>
@@ -9,13 +9,13 @@
   <tbody>
     <g:each in="${d.decisionSupportLines.values()}" var="dsl">
       <tr>
-        <td colspan="3"><h3>${dsl.description}</h3></td>
+        <td colspan="3" style="vertical-align:top;"><h3>${dsl.description}</h3></td>
       </tr>
       <g:each in="${dsl.criterion}" var="c">
         <tr>
-          <td>&nbsp;&nbsp;<h5>${c[0]}</h5></td>
-          <td>
-            <i id="${c[2]}_${c[3]}_q" class="fa fa-question-circle fa-2x" style="color:${c[1]==null?'blue':'grey'};"></i>&nbsp;
+          <td style="vertical-align:top; white-space: nowrap;">&nbsp;&nbsp;${c[0]}</td>
+          <td style="white-space: nowrap;">
+            <i id="${c[2]}_${c[3]}_r" class="fa fa-times-circle fa-2x" style="color:${(c[1]=='Unknown'||c[1]==null)?'blue':'grey'};"></i>&nbsp;
 
             <a href='javascript:setAppliedCriterion("${c[2]}","${c[3]}","r","red");'><i id="${c[2]}_${c[3]}_r" 
                                                                           class="fa fa-times-circle fa-2x" 
@@ -29,10 +29,18 @@
                                                                           class="fa fa-check-circle fa-2x" 
                                                                           style="color:${c[1]=='Green'?'green':'grey'};"></i></a>
           </td>
-          <td>
-            <form class="form-inline">
+          <td style="vertical-align:top;">
+            <form role="form" class="form" onsubmit='return addNote("${c[2]}_${c[3]}")'>
               <div class="form-group">
-                <label for="note">Add note:</label> <textarea></textarea>
+                <div class="input-group">
+                  <span class="input-group-addon">
+                    Add note
+                  </span>
+                  <textarea class="form-control" id="${c[2]}_${c[3]}_newnote"></textarea>
+                  <span class="input-group-addon">
+                    <button type="submit">Add</button>
+                  </span>
+                </div>
               </div>
             </form>
           </td>
@@ -53,13 +61,27 @@
     $('#'+component_id+'_'+criterion_id+'_'+v).css('color',c);
 
     $.ajax({
-      // libs and culture: 0894-8631
       url: gokb.config.baseUrl+'/ajaxSupport/appliedCriterion?comp='+component_id+'&crit='+criterion_id+'&val='+v,
       dataType:"jsonp",
       crossDomain: true
     }).done(function(data) {
-      alert(data);
+      // alert(data);
     });
+  }
 
+  function addNote(id) {
+
+    var v = $('#'+id+'_newnote').val();
+
+    $.ajax({
+      // libs and culture: 0894-8631
+      url: gokb.config.baseUrl+'/ajaxSupport/criterionComment?comp='+id+'&comment='+v,
+      dataType:"jsonp",
+      crossDomain: true
+    }).done(function(data) {
+      // alert(data);
+    });
+    
+    return false;
   }
 </asset:script>
