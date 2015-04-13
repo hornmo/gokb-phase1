@@ -519,6 +519,8 @@ class AjaxSupportController {
         def rdv = RefdataCategory.lookupOrCreate('RAG', 'Unknown');
         current_applied = new DSAppliedCriterion(appliedTo:component, criterion:crit, value: rdv).save(failOnError:true)
       }
+
+      def note = new DSNote(criterion:current_applied, note:params.comment).save(failOnError:true);
      
       log.debug("Found applied critirion ${current_applied} for ${idparts[0]} ${idparts[1]} ${component} ${crit}");
     }

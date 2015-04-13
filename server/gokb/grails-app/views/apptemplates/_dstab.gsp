@@ -30,6 +30,15 @@
                                                                           style="color:${c[1]=='Green'?'green':'grey'};"></i></a>
           </td>
           <td style="vertical-align:top;">
+
+            <table class="table table-bordered">
+              <tbody id="${c[2]}_${c[3]}_notestable">
+                <g:each in="${c[4]?.notes}" var="x">
+                  <tr><td>${x.note}</td></tr>
+                </g:each>
+              </tbody>
+            </table>
+
             <form role="form" class="form" onsubmit='return addNote("${c[2]}_${c[3]}")'>
               <div class="form-group">
                 <div class="input-group">
@@ -81,6 +90,9 @@
     }).done(function(data) {
       // alert(data);
     });
+
+    $('#'+id+'_notestable').append("<tr><td>"+v+"</td></tr>");
+    $('#'+id+'_newnote').val('');
     
     return false;
   }

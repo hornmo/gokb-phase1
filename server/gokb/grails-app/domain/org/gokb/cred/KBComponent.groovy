@@ -940,7 +940,8 @@ abstract class KBComponent {
         result[cat_code].criterion.add([c[0].title, 
                                         c[1]?.value?.value, 
                                         getId(),
-                                        c[0].id])
+                                        c[0].id,
+                                        c[1]])
       }
     }
     else {
