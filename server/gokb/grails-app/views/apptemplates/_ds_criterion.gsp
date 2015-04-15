@@ -17,9 +17,12 @@
     <tbody>
       <g:each in="${d.getDecisionSupportLines()}" var="ac">
         <tr>
-          <td>${ac.appliedTo?.getNiceName()}</td>
           <td>
-            ${ac.value?.value}
+            <g:if test="${ac.appliedTo}">
+              <g:link controller="resource" action="show" id="${ac.appliedTo.class.name}:${ac.appliedTo.id}">${ac.appliedTo?.getNiceName()} ${ac.appliedTo?.name}</g:link>
+            </g:if>
+          </td>
+          <td style="vertical-align:top; white-space: nowrap;">
             <i class="fa fa-question-circle fa-2x" style="color:${(ac.value?.value=='Unknown'||ac.value?.value==null)?'blue':'grey'};"></i>&nbsp;
             <i class="fa fa-times-circle fa-2x" style="color:${ac.value?.value=='Red'?'red':'grey'};"></i> &nbsp;
             <i class="fa fa-info-circle fa-2x" style="color:${ac.value?.value=='Amber'?'#FFBF00':'grey'};"></i>&nbsp;
@@ -27,7 +30,7 @@
           </td>
           <td>
             <ul>
-              <g:each in="${ac.notes?.each}" var="note">
+              <g:each in="${ac.notes}" var="note">
                 <li>${note.note}</li>
               </g:each>
             </ul>

@@ -63,4 +63,9 @@ class DSCriterion {
     return result
   }
 
+  @Transient
+  def getNiceName() {
+    return "${owner?.description} / ${title}"
+  }
+
 }

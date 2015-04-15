@@ -81,6 +81,7 @@ class Platform extends KBComponent {
     builder.'gokb' (attr) {
       builder.'platform' (['id':(id)]) {
         builder.'name' (name)
+        builder.'provider' (provider?.name)
         builder.'primaryUrl' (primaryUrl)
         builder.'authentication' (authentication?.value)
         builder.'software' (software?.value)
