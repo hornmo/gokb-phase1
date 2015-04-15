@@ -48,4 +48,19 @@ class DSCriterion {
     result
   }
 
+  @Transient
+  def getDecisionSupportLines() {
+    def result = null
+
+    // N.B. for steve.. saying "if id != null" always fails - id is hibernate injected - should investigate this
+    if ( getId() != null ) {
+      // N.B. Long standing bug in hibernate means that dsac.appliedTo = ? throws a 'can only ref props in the driving table' exception
+      // Workaround is to use the id directly
+      result = DSCriterion.executeQuery('select dsac from DSAppliedCriterion as dsac where dsac.criterion.id = ?',getId());
+    }
+    else {
+    }
+    return result
+  }
+
 }
