@@ -2,22 +2,12 @@ package org.gokb.cred
 
 import javax.persistence.Transient
 
-class Person {
-
-  String label
-
-  static hasMany = [
-  ]
-
-  static mappedBy = [
-  ]
+class Person extends KBComponent {
 
   static mapping = {
-    label column:'pers_label'
   }
 
   static constraints = {
-    label(nullable:false, blank:false)
   }
 
 }
