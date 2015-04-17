@@ -62,6 +62,28 @@
     <g:xEditable class="ipe" owner="${d}" type="date" field="publishedTo" />
   </dd>
 
+
+  <dt> <g:annotatedLabel owner="${d}" property="editionNumber">Edition Number</g:annotatedLabel> </dt>
+  <dd> <g:xEditable class="ipe" owner="${d}" field="editionNumber" /> </dd>
+
+  <dt> <g:annotatedLabel owner="${d}" property="editionDifferentiator">Edition Differentiator</g:annotatedLabel> </dt>
+  <dd> <g:xEditable class="ipe" owner="${d}" field="editionDifferentiator" /> </dd>
+
+  <dt> <g:annotatedLabel owner="${d}" property="editionStatement">Edition Statement</g:annotatedLabel> </dt>
+  <dd> <g:xEditable class="ipe" owner="${d}" field="editionStatement" /> </dd>
+
+  <dt> <g:annotatedLabel owner="${d}" property="volumeNumber">Volume Number</g:annotatedLabel> </dt>
+  <dd> <g:xEditable class="ipe" owner="${d}" field="volumeNumber" /> </dd>
+
+  <dt> <g:annotatedLabel owner="${d}" property="dateFirstInPrint">Date first in print</g:annotatedLabel> </dt>
+  <dd> <g:xEditable class="ipe" owner="${d}" type="date" field="dateFirstInPrint" /> </dd>
+
+  <dt> <g:annotatedLabel owner="${d}" property="dateFirstOnline">Date first online</g:annotatedLabel> </dt>
+  <dd> <g:xEditable class="ipe" owner="${d}" type="date" field="dateFirstOnline" /> </dd>
+
+  <dt> <g:annotatedLabel owner="${d}" property="summaryOfContent">Summary of content</g:annotatedLabel> </dt>
+  <dd> <g:xEditable class="ipe" owner="${d}" field="summaryOfContent" /> </dd>
+
   <g:if test="${d.id != null}">
     <dt>
       <g:annotatedLabel owner="${d}" property="titleHistory">Title History</g:annotatedLabel>
