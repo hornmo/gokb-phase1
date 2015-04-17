@@ -1163,6 +1163,48 @@ globalSearchTemplates = [
       ]
     ]
   ],
+  'Subjects':[
+    baseclass:'org.gokb.cred.Subject',
+    title:'Subjects',
+    group:'Tertiary',
+    qbeConfig:[
+      qbeForm:[
+        [
+          prompt:'Heading',
+          qparam:'qp_heading',
+          placeholder:'Subject Heading',
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'heading', 'wildcard':'B']
+        ],
+      ],
+      qbeGlobals:[
+      ],
+      qbeResults:[
+        [heading:'Heading', property:'heading', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+      ]
+    ]
+  ],
+  'People':[
+    baseclass:'org.gokb.cred.Person',
+    title:'People',
+    group:'Tertiary',
+    qbeConfig:[
+      qbeForm:[
+        [
+          prompt:'Name',
+          qparam:'qp_name',
+          placeholder:'Name',
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'label', 'wildcard':'B']
+        ],
+      ],
+      qbeGlobals:[
+      ],
+      qbeResults:[
+        [heading:'Name', property:'label', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+      ]
+    ]
+  ],
+
+
 
 ]
 
@@ -1191,7 +1233,9 @@ globalDisplayTemplates = [
   'org.gokb.cred.Imprint': [ type:'staticgsp', rendername:'imprint' ],
   'org.gokb.cred.IdentifierNamespace': [ type:'staticgsp', rendername:'identifier_namespace' ],
   'org.gokb.cred.DSCategory': [ type:'staticgsp', rendername:'ds_category' ],
-  'org.gokb.cred.DSCriterion': [ type:'staticgsp', rendername:'ds_criterion' ]
+  'org.gokb.cred.DSCriterion': [ type:'staticgsp', rendername:'ds_criterion' ],
+  'org.gokb.cred.Subject': [ type:'staticgsp', rendername:'subject' ],
+  'org.gokb.cred.Person': [ type:'staticgsp', rendername:'person' ]
 ]
 
 permNames = [
