@@ -771,5 +771,8 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('SPR', 'Author').save()
     RefdataCategory.lookupOrCreate('SPR', 'Illustrator').save()
     RefdataCategory.lookupOrCreate('SPR', 'Editor').save()
+
+    RefdataCategory.lookupOrCreate('Dewey', '500 Natural sciences & mathematics').save()
+    RefdataCategory.lookupOrCreate('Dewey', '501 Philosophy & theory').save()
   }
 }
