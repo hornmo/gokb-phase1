@@ -4,7 +4,7 @@ import javax.persistence.Transient
 
 class Subject {
 
-  RefdataValue cls
+  RefdataValue clsmrk
   String heading
 
   static hasMany = [
@@ -14,12 +14,12 @@ class Subject {
   ]
 
   static mapping = {
-    cls column:'subj_class'
+    clsmrk column:'subj_class'
     heading column:'subj_heading'
   }
 
   static constraints = {
-    cls(nullable:true, blank:false)
+    clsmrk(nullable:true, blank:false)
     heading(nullable:false, blank:false)
   }
 
