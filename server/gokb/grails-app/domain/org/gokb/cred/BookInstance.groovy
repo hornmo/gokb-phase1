@@ -7,6 +7,7 @@ import groovy.util.logging.*
 
 @Log4j
 class BookInstance extends TitleInstance {
+
   String editionNumber
   String editionDifferentiator
   String editionStatement
@@ -18,7 +19,7 @@ class BookInstance extends TitleInstance {
  static mapping = {
             editionNumber column:'bk_ednum'
     editionDifferentiator column:'bk_editionDifferentiator'
-           editionEdition column:'bk_editionStatement'
+         editionStatement column:'bk_editionStatement'
              volumeNumber column:'bk_volume'
          dateFirstInPrint column:'bk_dateFirstInPrint'
           dateFirstOnline column:'bk_dateFirstOnline'
@@ -28,7 +29,7 @@ class BookInstance extends TitleInstance {
   static constraints = {
             editionNumber (nullable:true, blank:false)
     editionDifferentiator (nullable:true, blank:false)
-           editionEdition (nullable:true, blank:false)
+         editionStatement (nullable:true, blank:false)
              volumeNumber (nullable:true, blank:false)
          dateFirstInPrint (nullable:true, blank:false)
           dateFirstOnline (nullable:true, blank:false)

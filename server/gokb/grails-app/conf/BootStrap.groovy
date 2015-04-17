@@ -767,5 +767,9 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('RAG', 'Amber').save()
     RefdataCategory.lookupOrCreate('RAG', 'Green').save()
 
+    // Scolarly publishing roles
+    RefdataCategory.lookupOrCreate('SPR', 'Author').save()
+    RefdataCategory.lookupOrCreate('SPR', 'Illustrator').save()
+    RefdataCategory.lookupOrCreate('SPR', 'Editor').save()
   }
 }

@@ -199,6 +199,10 @@
 
     <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
 
+    <li><a href="#people" data-toggle="tab">People</a></li>
+
+    <li><a href="#subjects" data-toggle="tab">Subjects</a></li>
+
   </ul>
   <div id="my-tab-content" class="tab-content">
     <div class="tab-pane active" id="titledetails">
@@ -427,6 +431,45 @@
 
     <div class="tab-pane" id="ds">
       <g:render template="dstab" contextPath="../apptemplates" model="${[d:d]}" />
+    </div>
+
+    <div class="tab-pane" id="people">
+      <table class="table table-striped table-bordered">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Role</th>
+          </tr>
+        </thead>
+        <tbody>
+          <g:each in="${d.people}" var="p">
+            <tr>
+              <td>${p.person.label}</td>
+              <td>${p.role?.value}</td>
+            </tr>
+          </g:each>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tab-pane" id="subjects">
+
+      <table class="table table-striped table-bordered">
+        <thead>
+          <tr>
+            <th>Subject</th>
+            <th>Classn</th>
+          </tr>
+        </thead>
+        <tbody>
+          <g:each in="${d.subjects}" var="s">
+            <tr>
+              <td>${p.subject.label}</td>
+              <td>${p.subject?.cls?.value}</td>
+            </tr>
+          </g:each>
+        </tbody>
+      </table>
     </div>
 
   </div>
