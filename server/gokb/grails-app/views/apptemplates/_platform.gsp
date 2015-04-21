@@ -14,6 +14,7 @@
       <g:xEditableRefData owner="${d}" field="status"
         config="KBComponent.Status" />
     </dd>
+
     <dt> <g:annotatedLabel owner="${d}" property="source">Source</g:annotatedLabel> </dt>
     <dd> <g:manyToOneReferenceTypedown owner="${d}" field="source" baseClass="org.gokb.cred.Source"> ${d.source?.name} </g:manyToOneReferenceTypedown> </dd>
 
