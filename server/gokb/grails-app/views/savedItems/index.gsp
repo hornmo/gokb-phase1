@@ -1,8 +1,12 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="layout" content="sb-admin" />
+<title>Saved Items</title>
+</head>
+<body>
 <h3>Saved Items</h3>
-<hr/>
-adaklsdjfalks
-Num saved items : ${saved_items.size()}
-<div class="container">
+<div class="panel">
   <div class="row threeColGrid">
     <g:each in="${saved_items}" var="itm">
       <g:if test="${itm instanceof org.gokb.cred.SavedSearch}">
@@ -20,3 +24,5 @@ Num saved items : ${saved_items.size()}
   </div>
 </div>
 
+</body>
+</html>
