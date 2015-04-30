@@ -1036,4 +1036,9 @@ abstract class KBComponent {
             return result
         }
     }
+
+      @Transient
+  def getNotes() {
+    return Notes.findAllByOwnerClassAndOwnerId(this.class.name, this.getId())
+  }
 }
