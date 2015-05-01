@@ -340,8 +340,16 @@
     <div class="tab-pane" id="identifiers">
       <g:render template="simpleCombos" contextPath="../apptemplates"
         model="${[d:d, property:'ids', fragment:'identifiers', cols:[
+<<<<<<< Upstream, based on labs
                   [expr:'namespace.value', colhead:'Namespace'],
                   [expr:'value', colhead:'ID', action:'link']]]}" />
+=======
+                  [expr:'toComponent.namespace.value', colhead:'Namespace'],
+                  [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
+
+      <g:render template="addIdentifier" contextPath="../apptemplates" model="${[d:d]}"/>
+
+>>>>>>> efb1300 Working on add identifier
     </div>
 
     <div class="tab-pane" id="addprops">
