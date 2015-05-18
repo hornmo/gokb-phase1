@@ -347,7 +347,7 @@
                   [expr:'toComponent.namespace.value', colhead:'Namespace'],
                   [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
 
-      <g:render template="addIdentifier" contextPath="../apptemplates" model="${[d:d]}"/>
+      <g:render template="addIdentifier" contextPath="../apptemplates" model="${[d:d, hash:'#identifiers']}"/>
 
 >>>>>>> efb1300 Working on add identifier
     </div>
