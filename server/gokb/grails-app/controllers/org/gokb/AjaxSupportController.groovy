@@ -206,7 +206,11 @@ class AjaxSupportController {
             }
           }
         }
- 
+		if (params.__refdataName && params.__refdataValue) {
+			log.debug("set refdata "+ params.__refdataName +" for component ${contextObj}")
+			def refdata = resolveOID2(params.__refdataValue)
+			new_obj[params.__refdataName] = refdata
+		}
         // Need to do the right thing depending on who owns the relationship. If new obj
         // BelongsTo other, should be added to recip collection.
         if ( params.__recip ) {
@@ -301,15 +305,54 @@ class AjaxSupportController {
     def contextObj = resolveOID2(params.__context)
     if ( contextObj ) {
       def item_to_remove = resolveOID2(params.__itemToRemove)
-      if ( item_to_remove ) {
-        contextObj[params.__property].remove(item_to_remove)
-        contextObj.save()
-      }
-      else {
+      if ( item_to_remove ) { 
+//		log.debug(params.__otherEnd)
+//		log.debug("data is: "+item_to_remove[params.__otherEnd]);  
+//		item_to_remove[params.__otherEnd]=null;
+//		log.debug("data is: "+item_to_remove[params.__otherEnd]);
+	  
+		  if ( ( item_to_remove != null ) &&
+			  ( item_to_remove.hasProperty('hasByCombo') ) && ( item_to_remove.hasByCombo != null ) ) {
+//		   log.debug("Processing hasByCombo properties...${item_to_remove.hasByCombo} on item_to_remove");
+		   item_to_remove.hasByCombo.keySet().each { hbc ->
+			 log.debug("Testing ${hbc}");
+			 log.debug("here's the data: "+ item_to_remove[hbc])
+			 if (item_to_remove[hbc]==contextObj) {
+				 log.debug("context found");
+				 //item_to_remove[hbc]=resolveOID2(null)
+				 item_to_remove.deleteParent();
+				 log.debug(item_to_remove.children)
+				 log.debug(item_to_remove.heading)
+				 log.debug(item_to_remove.parent)
+				 log.debug("tried removal: "+item_to_remove[hbc]);
+			 }
+		   }
+	  }
+	    log.debug(params);
+	    log.debug("removing: "+item_to_remove+" from "+params.__property+" for "+contextObj);
+
+	    contextObj[params.__property].remove(item_to_remove);
+
+		log.debug("child removed: "+ contextObj[params.__property]);
+		if (contextObj.save()==false) {
+		  log.debug(contextObj.errors.allErrors())
+		} else {
+		  log.debug("saved ok");
+		}
+		item_to_remove.refresh();
+		if (params.__otherEnd && item_to_remove[params.__otherEnd]!=null) {
+		  log.debug("remove parent: "+item_to_remove[params.__otherEnd])
+		  //item_to_remove.setParent(null);
+		  item_to_remove[params.__otherEnd]=null; //this seems to fail
+		  log.debug("parent removed: "+item_to_remove[params.__otherEnd]);
+		}
+		if (item_to_remove.save()==false) {
+		 log.debug(item_to_remove.errors.allError());
+		}
+      } else {
         log.error("Unable to resolve item to remove : ${params.__itemToRemove}");
       }
-    }
-    else {
+    } else {
       log.error("Unable to resolve context obj : ${params.__context}");
     }
     redirect(url: request.getHeader('referer'))

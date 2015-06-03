@@ -14,6 +14,65 @@ grails.config.locations = [ "classpath:${appName}-config.properties",
   "file:${userHome}/.grails/${appName}-config.properties",
   "file:${userHome}/.grails/${appName}-config.groovy"]
 
+//PJN add mapping files for ingram and ybp to KBart2
+
+/* kbart fields FOR BOOKS (not SERIALS) are:
+ * publication_title  	TICK
+ * print_identifier   	TICK
+ * online_identifier  	TICK
+ * title_url			TICK
+ * first_author			TICK
+ * title_id				// not sure we can do this sensibly
+ * embargo_info			TICK (embargo in TIPP)
+ * coverage_depth		// Coverage Note in TIPP
+ * notes				TICK (notes in TIPP)
+ * publisher_name		TICK
+ * publication_type "monograph"		TICK(always set medium to eBook)
+ * date_monograph_published_print	TICK
+ * date_monograph_published_online	TICK
+ * monograph_volume		TICK
+ * monograph_edition	TICK
+ * first_editor			TICK
+ * parent_publication_title_id //Not sure we can do this sensibly
+ * access_type "P" or "F"  // ???
+ * 
+ * some additioanl fields for KBART that are "non standard"
+ * additional_isbns
+ * additional_authors
+ * 
+ * 
+ */
+
+//need to put in subjects / classifications somehow
+
+kbart2.mappings= [
+	ingram : [
+		[field: 'Title', kbart: 'publication_title'],
+		[field: 'Title ID', kbart: 'print_identifier'],
+		[field: 'Authors', kbart: 'first_author', separator: ';', additional: 'additional_authors'],
+		[field: 'Hardcover EAN ISBN', additional: 'additional_isbns'],  //another ISBN
+		[field: 'Paper EAN ISBN', additional: 'additional_isbns'],   //another ISBN
+		[field: 'Pub EAN ISBN', kbart: 'online_identifier'],
+		[field: 'MIL EAN ISBN', additional: 'additional_isbns'],  //another ISBN
+		[field: 'Publisher', kbart: 'publisher_name'],
+		[field: 'URL', kbart: 'title_url'],
+		[field: 'PubDate', kbart: 'date_monograph_published_online'],
+	 ],
+     ybp : [
+	 	[field: 'Title', kbart: 'publication_title'],
+		[field: 'ISBN', kbart: 'online_identifier'],
+		[field: 'Author', kbart: 'first_author'],
+		[field: 'Editor', kbart: 'first_editor'],
+		[field: 'Publisher', kbart: 'publisher_name'],
+		[field: 'Pub_Year', kbart: 'date_monograph_published_online'],
+		[field: 'Edition', kbart: 'monograph_edition']
+     ],
+]
+
+kbart2.personCategory='SPR'
+kbart2.authorRole='Author'
+kbart2.editorRole='Editor'
+
 identifiers = [
   "class_ones" : [
     "issn",
@@ -26,7 +85,15 @@ identifiers = [
   // is found against a title but as an eISSN we still treat this as a match
   "cross_checks" : [
     ["issn", "eissn"]
+  ],
+
+  "ebook_class_ones" : [
+	  "isbn"
+  ],
+
+  "ebook_cross_checks": [
   ]
+
 ]
 // if (System.properties["${appName}.config.location"]) {
 //    grails.config.locations << "file:" + System.properties["${appName}.config.location"]
@@ -657,6 +724,24 @@ globalSearchTemplates = [
           contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'publisher'],
           hide:true
         ],
+	[
+	  type:'lookup',
+	  baseClass:'org.gokb.cred.Person',
+	  prompt:'Person',
+	  qparam:'qp_person',
+	  placeholder:'Person',
+	  contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'people.person'],
+	  hide:true
+	],
+	[
+	  type:'lookup',
+	  baseClass:'org.gokb.cred.Subject',
+	  prompt:'Subject',
+	  qparam:'qp_subject',
+	  placeholder:'Subject',
+	  contextTree:[ 'ctxtp':'qry', 'comparator' : 'eq', 'prop':'subjects.subject'],
+	  hide:true
+	],
         [
           type:'lookup',
           baseClass:'org.gokb.cred.Org',
@@ -1173,13 +1258,13 @@ globalSearchTemplates = [
           prompt:'Heading',
           qparam:'qp_heading',
           placeholder:'Subject Heading',
-          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'heading', 'wildcard':'B']
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name', 'wildcard':'B']
         ],
       ],
       qbeGlobals:[
       ],
       qbeResults:[
-        [heading:'Heading', property:'heading', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Heading', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
       ]
     ]
   ],
@@ -1187,19 +1272,21 @@ globalSearchTemplates = [
     baseclass:'org.gokb.cred.Person',
     title:'People',
     group:'Tertiary',
+	defaultSort:'name',
+	defaultOrder:'asc',
     qbeConfig:[
       qbeForm:[
         [
           prompt:'Name',
           qparam:'qp_name',
           placeholder:'Name',
-          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'label', 'wildcard':'B']
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name', 'wildcard':'B']
         ],
       ],
       qbeGlobals:[
       ],
       qbeResults:[
-        [heading:'Name', property:'label', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Name', property:'name', sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
       ]
     ]
   ],
@@ -1235,7 +1322,8 @@ globalDisplayTemplates = [
   'org.gokb.cred.DSCategory': [ type:'staticgsp', rendername:'ds_category' ],
   'org.gokb.cred.DSCriterion': [ type:'staticgsp', rendername:'ds_criterion' ],
   'org.gokb.cred.Subject': [ type:'staticgsp', rendername:'subject' ],
-  'org.gokb.cred.Person': [ type:'staticgsp', rendername:'person' ]
+  'org.gokb.cred.Person': [ type:'staticgsp', rendername:'person' ],
+  'org.gokb.cred.EBookDataFile': [ type:'staticgsp', rendername:'eBookDatafile' ]
 ]
 
 permNames = [

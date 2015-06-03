@@ -73,6 +73,12 @@
 		<g:xEditable class="ipe" owner="${d}" type="date"
 			field="accessEndDate" />
 	</dd>
+		<dt>
+		<g:annotatedLabel owner="${d}" property="notes">Notes</g:annotatedLabel>
+	</dt>
+	<dd>
+		<g:xEditable class="ipe" owner="${d}" field="notes" />
+	</dd>
 </dl>
 
 <ul id="tabs" class="nav nav-tabs">

@@ -1,6 +1,7 @@
 package org.gokb
 
 import org.gokb.cred.KBComponent
+import org.gokb.cred.KBComponentVariantName
 import org.gokb.cred.Org
 import org.gokb.validation.types.LookedUpValue
 import grails.util.GrailsNameUtils
@@ -9,6 +10,42 @@ class ComponentLookupService {
 
   def grailsApplication
 
+  //This one tries to find based on the class and the names it might have (including variants.
+  //first it looks at the actual name, then the normalised names, then the alternate names and finally alternate normalised names.
+  //it stops when it finds a hit.
+  def findComponents(String the_class_name, String the_name) {
+	  def results
+	  def normalised_name = GOKbTextUtils.normaliseString(the_name);
+	  def clazz=Class.forName(the_class_name);
+	  log.debug("looking for ${the_class_name}:${the_name}:${normalised_name}")
+	  results = clazz.findAllByNameIlike(the_name);
+	  log.debug("direct name results: ${results}")
+	  if (results.size()==0) {
+		  results = clazz.findAllByNormnameIlike(normalised_name)
+		  log.debug("norm name results: ${results}")
+	  }
+	  if (results.size()==0) {
+		results = KBComponentVariantName.withCriteria() {
+			projections {
+				distinct('owner')
+			}
+			eq 'variantName', the_name
+		}
+		log.debug("variant name results: ${results}")
+	  }
+	  if (results.size()==0) {
+	    results = KBComponentVariantName.withCriteria() {
+			projections {
+				distinct('owner')
+			}
+			eq 'normVariantName', normalised_name
+		}
+		log.debug("variant norm name results: ${results}")
+	  }
+	  log.debug("final results: ${results}")
+	  results
+  }
+  
   public <T extends KBComponent> Map<String, T> lookupComponents(String... comp_name_strings) {
     Map<String, T> results = [:]
     for (String comp_name_string : comp_name_strings) {
@@ -58,9 +95,10 @@ class ComponentLookupService {
 
     // The Component
     T comp = null
+	log.debug("lookup component: ${comp_name_string}")
     if (comp_name_string) {
       def component_match = comp_name_string =~ "${LookedUpValue.REGEX_TEMPLATE[0]}([^\\:]+)${LookedUpValue.REGEX_TEMPLATE[1]}\$"
-
+	  log.debug("component match ${component_match}")
       if (component_match) {
 
         log.debug ("Matched the component syntax \"Display Text::{ComponentType:ID}\".")
@@ -98,7 +136,9 @@ class ComponentLookupService {
           // Suppress errors here. Just return null.
           log.debug("Unable to parse component string.", t)
         }
-      }
+      } else {
+	  	log.debug("component match returned false")
+	  }
     }
 
     comp

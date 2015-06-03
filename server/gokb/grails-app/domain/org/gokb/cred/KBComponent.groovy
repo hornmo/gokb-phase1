@@ -304,6 +304,7 @@ abstract class KBComponent {
     reviewRequests:ReviewRequest,
     people:ComponentPerson,
     subjects:ComponentSubject
+	//subjects: Subject
   ]
 
   static mapping = {
@@ -625,7 +626,7 @@ abstract class KBComponent {
    */
   @Transient
    public List<Combo> getCombosByPropertyName(propertyName) {
-
+	log.debug("KBComponent::getCombosByPropertyNameAndStatus::${propertyName}")
     return getCombosByPropertyNameAndStatus(propertyName,null)
   }
 

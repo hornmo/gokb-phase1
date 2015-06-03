@@ -169,6 +169,7 @@
 
 
               <li class="${params?.controller == "upload" ? 'active' : ''}" ><g:link controller="upload" action="index"><i class="fa fa-upload fa-fw"></i> File Upload</g:link></li>
+              <li class="${params?.controller == "EBookUpload" ? 'active' : ''}" ><g:link controller="EBookUpload" action="index"><i class="fa fa-upload fa-fw"></i> eBook TSV Upload</g:link></li>
               <li class="${params?.controller == "coreference" ? 'active' : ''}"><g:link controller="coreference" action="index"><i class="fa fa-list-alt fa-fw"></i> Coreference</g:link></li>
 
               <sec:ifAnyGranted roles="ROLE_ADMIN">

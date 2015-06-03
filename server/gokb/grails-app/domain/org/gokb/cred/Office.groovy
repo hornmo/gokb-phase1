@@ -17,7 +17,7 @@ class Office extends KBComponent {
   RefdataValue country
 
   static hasByCombo = [
-    org : Org,
+    org : Org
   ]
 
   static manyByCombo = [

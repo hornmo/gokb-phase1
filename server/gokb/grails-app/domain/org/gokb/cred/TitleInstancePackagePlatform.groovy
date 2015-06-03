@@ -23,6 +23,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   String url
   Date accessStartDate
   Date accessEndDate
+  String notes
 
   private static refdataDefaults = [
     "format"        : "Electronic",
@@ -85,6 +86,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     paymentType column:'tipp_payment_type'
     accessStartDate column: 'tipp_access_start_date'
     accessEndDate column: 'tipp_access_end_date'
+	notes column:'ebook_tipp_notes'
   }
 
   static constraints = {

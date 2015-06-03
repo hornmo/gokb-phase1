@@ -490,7 +490,7 @@ class DomainClassExtender {
           // Set the class also.
           mappedByClass = forClass
         }
-
+		
         // We have a mapped by class, but we need to check that it isn't declared on one of the super classes.
         def propNameToUse = GrailsNameUtils.getPropertyName(capProp)
         Class theClass = mappedByClass

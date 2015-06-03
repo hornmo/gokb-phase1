@@ -24,6 +24,5 @@ class ComponentPerson {
     component(nullable:false, blank:false)
     person(nullable:false, blank:false)
     role(nullable:false, blank:false)
-  }
-
+  } 
 }

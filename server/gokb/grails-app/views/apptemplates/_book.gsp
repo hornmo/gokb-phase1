@@ -179,7 +179,7 @@
 
     <li><a href="#publishers" data-toggle="tab">Publishers <span
         class="badge badge-warning">
-          ${d.getCombosByPropertyNameAndStatus('publisher',params.publisher_status)?.size()}
+          ${d.publisher?.size()}
       </span></a></li>
 
     <li><a href="#availability" data-toggle="tab">Availability <span
@@ -199,9 +199,9 @@
 
     <li><a href="#ds" data-toggle="tab">Decision Support</a></li>
 
-    <li><a href="#people" data-toggle="tab">People</a></li>
+    <li><a href="#people" data-toggle="tab">People <span class="badge badge-warning"> ${d.people?.size()} </span></a></li>
 
-    <li><a href="#subjects" data-toggle="tab">Subjects</a></li>
+    <li><a href="#subjects" data-toggle="tab">Subjects <span class="badge badge-warning"> ${d.subjects?.size()} </span></a></li>
 
   </ul>
   <div id="my-tab-content" class="tab-content">
@@ -365,39 +365,14 @@
       <dt>
         <g:annotatedLabel owner="${d}" property="publishers">Publishers</g:annotatedLabel>
       </dt>
-      <g:form method="POST" controller="${controllerName}" action="${actionName}" fragment="publishers"
- params="${params.findAll{k, v -> k != 'publisher_status'}}">
-               
-       Hide Deleted : <g:select name="publisher_status" optionKey="key" optionValue="value" from="${[null:'Off','Active':'On']}" value="${params.publisher_status}" />
-      </g:form>
 
      <dd>
-        <table class="table table-striped table-bordered">
-          <thead>
-            <tr>
-              <th>Publisher Name</th>
-              <th>Combo Status</th>
-              <th>Publisher From</th>
-              <th>Publisher To</th>
-            </tr>
-          </thead>
-          <tbody>
-            <g:each in="${d.getCombosByPropertyNameAndStatus('publisher',params.publisher_status)}" var="p">
-              <tr>
-                <td><g:link controller="resource" action="show"
-                    id="${p.toComponent.class.name}:${p.toComponent.id}">
-                    ${p.toComponent.name}
-                  </g:link></td>
-                <td><g:xEditableRefData owner="${p}" field="status"
-                    config='Combo.Status' /></td>
-                <td><g:xEditable class="ipe" owner="${p}" field="startDate"
-                    type="date" /></td>
-                <td><g:xEditable class="ipe" owner="${p}" field="endDate"
-                    type="date" /></td>
-              </tr>
-            </g:each>
-          </tbody>
-        </table>
+		<g:render template="simpleCombos" contextPath="../apptemplates"
+        model="${[d:d, property:'publisher', fragment:'identifiers', cols:[
+                  [expr:'name', colhead:'name', action:'link'],
+                  [expr:'status', colhead:'status'],
+				  [expr:'startDate', colhead: 'from'],
+				  [expr:'endDate', colhead: 'to']]]}" />
       </dd>
 
         <g:form controller="ajaxSupport" action="addToStdCollection" class="form-inline">
@@ -413,10 +388,12 @@
     </div>
 
     <div class="tab-pane" id="identifiers">
-      <g:render template="combosByType" contextPath="../apptemplates"
+    <div class="tab-pane" id="identifiers">
+      <g:render template="simpleCombos" contextPath="../apptemplates"
         model="${[d:d, property:'ids', fragment:'identifiers', cols:[
-                  [expr:'toComponent.namespace.value', colhead:'Namespace'],
-                  [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
+                  [expr:'namespace.value', colhead:'Namespace'],
+                  [expr:'value', colhead:'ID', action:'link']]]}" />
+    </div>
     </div>
 
     <div class="tab-pane" id="addprops">
@@ -434,43 +411,33 @@
     </div>
 
     <div class="tab-pane" id="people">
-      <table class="table table-striped table-bordered">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Role</th>
-          </tr>
-        </thead>
-        <tbody>
-          <g:each in="${d.people}" var="p">
-            <tr>
-              <td>${p.person.label}</td>
-              <td>${p.role?.value}</td>
-            </tr>
-          </g:each>
-        </tbody>
-      </table>
+
+     <dl>
+	    <dt>
+		  <g:annotatedLabel owner="${d}" property="people">Add People</g:annotatedLabel>
+		</dt>
+		<dd>
+		  <!-- this bit could be better  -->
+		  <g:render template="componentPerson" contextPath="../apptemplates"
+				    model="${[d:d, property:'people', cols:[[expr:'person.name',colhead:'Name', action:'link-person'],
+						                                    [expr:'role.value', colhead: 'Role']], targetClass:'org.gokb.cred.Person',direction:'in']}" />
+		</dd>
+	  </dl>
     </div>
 
     <div class="tab-pane" id="subjects">
-
-      <table class="table table-striped table-bordered">
-        <thead>
-          <tr>
-            <th>Subject</th>
-            <th>Classn</th>
-          </tr>
-        </thead>
-        <tbody>
-          <g:each in="${d.subjects}" var="s">
-            <tr>
-              <td>${p.subject.label}</td>
-              <td>${p.subject?.cls?.value}</td>
-            </tr>
-          </g:each>
-        </tbody>
-      </table>
-    </div>
+	  <dl>
+	    <dt>
+		  <g:annotatedLabel owner="${d}" property="subjects">Add Subjects</g:annotatedLabel>
+		</dt>
+		<dd>
+		  <!-- this bit could be better  -->
+		  <g:render template="componentSubject" contextPath="../apptemplates"
+				    model="${[d:d, property:'subjects', cols:[[expr:'subject.name',colhead:'Subject Heading',action:'link-subject'],
+						                                      [expr:'subject.clsmrk', colhead: 'Classification']],targetClass:'org.gokb.cred.Subject',direction:'in']}" />
+		</dd>
+	  </dl>
+	</div>
 
   </div>
   <g:render template="componentStatus" contextPath="../apptemplates"

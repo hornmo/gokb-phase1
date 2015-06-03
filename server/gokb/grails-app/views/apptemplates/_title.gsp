@@ -384,12 +384,11 @@
 
 
     </div>
-
     <div class="tab-pane" id="identifiers">
-      <g:render template="combosByType" contextPath="../apptemplates"
+      <g:render template="simpleCombos" contextPath="../apptemplates"
         model="${[d:d, property:'ids', fragment:'identifiers', cols:[
-                  [expr:'toComponent.namespace.value', colhead:'Namespace'],
-                  [expr:'toComponent.value', colhead:'ID', action:'link']]]}" />
+                  [expr:'namespace.value', colhead:'Namespace'],
+                  [expr:'value', colhead:'ID', action:'link']]]}" />
     </div>
 
     <div class="tab-pane" id="addprops">
