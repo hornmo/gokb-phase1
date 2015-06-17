@@ -65,7 +65,8 @@ kbart2.mappings= [
 		[field: 'Editor', kbart: 'first_editor'],
 		[field: 'Publisher', kbart: 'publisher_name'],
 		[field: 'Pub_Year', kbart: 'date_monograph_published_online'],
-		[field: 'Edition', kbart: 'monograph_edition']
+		[field: 'Edition', kbart: 'monograph_edition'],
+		[field: 'LC/NLM/Dewey_Class', additional: 'subjects']
      ],
 ]
 
@@ -221,7 +222,10 @@ log4j = {
       'com.k_int.asset.pipeline.groovy',
       'asset.pipeline.less.compilers',
       'com.k_int.RefineUtils',
-      'com.k_int.grgit.GitUtils'
+      'com.k_int.grgit.GitUtils',
+      'au.com.bytecode.opencsv',
+      'au.com.bytecode.opencsv.bean',
+	  'org.gokb.cred.IngestionProfile'
       // 'org.gokb'
 
   //   debug  'org.gokb.DomainClassExtender'
@@ -1128,7 +1132,7 @@ globalSearchTemplates = [
           qparam:'qp_name',
           placeholder:'Name',
           contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
-        ],
+        ]
       ],
       qbeGlobals:[
       ],
@@ -1248,6 +1252,26 @@ globalSearchTemplates = [
       ]
     ]
   ],
+  'IngestionProfiles':[
+	baseclass:'org.gokb.cred.IngestionProfile',
+	title:'Ingestion Profiles',
+	group:'Secondary',
+	qbeConfig:[
+	  qbeForm:[
+		[
+		  prompt:'name',
+		  qparam:'qp_name',
+		  placeholder:'Profile Name',
+		  contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name', 'wildcard':'B']
+		],
+	  ],
+	  qbeGlobals:[
+	  ],
+	  qbeResults:[
+		[heading:'Name', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+	  ]
+	]
+  ],
   'Subjects':[
     baseclass:'org.gokb.cred.Subject',
     title:'Subjects',
@@ -1323,7 +1347,7 @@ globalDisplayTemplates = [
   'org.gokb.cred.DSCriterion': [ type:'staticgsp', rendername:'ds_criterion' ],
   'org.gokb.cred.Subject': [ type:'staticgsp', rendername:'subject' ],
   'org.gokb.cred.Person': [ type:'staticgsp', rendername:'person' ],
-  'org.gokb.cred.EBookDataFile': [ type:'staticgsp', rendername:'eBookDatafile' ]
+  'org.gokb.cred.IngestionProfile': [ type:'staticgsp', rendername:'ingestionProfile' ]
 ]
 
 permNames = [

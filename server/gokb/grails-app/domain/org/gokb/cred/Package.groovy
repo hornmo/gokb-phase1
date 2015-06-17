@@ -44,7 +44,8 @@ class Package extends KBComponent {
   static manyByCombo = [
     tipps         : TitleInstancePackagePlatform,
     children      : Package,
-    curatoryGroups: CuratoryGroup
+    curatoryGroups: CuratoryGroup,
+	
   ]
   
   static hasByCombo = [
@@ -60,7 +61,7 @@ class Package extends KBComponent {
   
   static mappedByCombo = [
      children : 'parent',
-    successor : 'previous',
+    successor : 'previous'
   ]
 
   static mapping = {
@@ -101,7 +102,7 @@ class Package extends KBComponent {
 
     result
   }
-  
+    
   public void deleteSoft (context) {
     // Call the delete method on the superClass.
     super.deleteSoft(context)

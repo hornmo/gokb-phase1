@@ -21,7 +21,7 @@ class EBookUploadController {
 	def forceIngest() {
 		log.debug("in forced ingest")
 		def result = genericOIDService.resolveOID(params.id)
-		TSVIngestionService.ingest(result)
+		TSVIngestionService.ingest(result, result.datafiles.last())
 		redirect(controller:'resource',action:'show',id:"${params.id}")
 	}
 	
@@ -30,15 +30,38 @@ class EBookUploadController {
 	  if ( request.method == 'POST' ) {
 		def temp_file
 		try {
+		  def ingestion_profile_id=request.getParameter("ingestionProfileId")
 		  def upload_mime_type = request.getFile("submissionFile")?.contentType
 		  def upload_filename = request.getFile("submissionFile")?.getOriginalFilename()
 		  def upload_packageType = genericOIDService.resolveOID(request.getParameter("packageType"))
 		  def upload_packageName = request.getParameter("packageName")
-		  def default_url = request.getParameter("platformUrl")
-		  log.debug("package name = "+upload_packageName);
-		  log.debug("package type = "+upload_packageType)
-		  // def input_stream = request.getFile("submissionFile")?.inputStream
-  
+		  def default_url = request.getParameter("platformUrl") //this is gonna go into source as well
+		  def profile_name = request.getParameter("profileName")
+		  def source_id=request.getParameter("sourceId")
+		  def source_name=request.getParameter("sourceName")
+		  def source_default_supply_method = request.getParameter("defaultSupplyMethod")
+		  def source_org_id = request.getParameter("orgId") //repsonsible person
+		  
+		  //do some simple validation:
+		  if (!ingestion_profile_id) {
+			  if (!profile_name || !default_url || !upload_packageName) {
+				  log.error("missing parameters to ebook upload - profile")
+				  log.error("profile name: ${profile_name}")
+				  log.error("default url: ${default_url}")
+				  log.error("package name: ${upload_packageName}")
+				  throw new Exception("missing ingestion profile")
+			  }
+			  if (!source_id) {
+				  if (!source_name || !source_default_supply_method || !source_org_id) {
+					  log.error("missing parameters to ebook upload - source")
+					  log.error("source name: ${source_name}")
+					  log.error("default supply method: ${source_default_supply_method}")
+					  log.error("source org id: ${source_org_id}")
+					  throw new Exception("missing source creation information")
+				  }
+			  }
+		  } 
+		  
 		  // store input stream locally
 		  def deposit_token = java.util.UUID.randomUUID().toString();
 		  temp_file = copyUploadedFile(request.getFile("submissionFile"), deposit_token);
@@ -54,27 +77,49 @@ class EBookUploadController {
 			redirect(controller:'resource',action:'show',id:"org.gokb.cred.DataFile:${existing_file.id}")
 		  }
 		  else {
-			def new_datafile = new EBookDataFile(
-											     packageName:upload_packageName,
-												 packageType:upload_packageType, 
-												 platformUrl:default_url,
+			def ingestion_profile
+			def source
+			  
+			if (ingestion_profile_id) {
+				ingestion_profile = genericOIDService.resolveOID(ingestion_profile_id)
+				source=ingestion_profile.source
+			} else {
+			    ingestion_profile = new IngestionProfile(name:profile_name,
+														 source:source,
+														 packageName:upload_packageName,
+												 		 packageType:upload_packageType, 
+														 platformUrl:default_url).save(flush:true)	
+				log.debug("created a new ingestion profile: ${ingestion_profile}")
+				if (source_id) {
+					source=genericOIDService.resolveOID(source_id)
+				} else {
+					source = new Source(name:source_name,
+										url: default_url,
+										defaultSupplyMethod:genericOIDService.resolveOID(source_default_supply_method),
+										responsibleParty:genericOIDService.resolveOID(source_org_id)).save(flush:true)
+					log.debug("created a new source: ${source}")
+				}
+			}
+			def new_datafile = new DataFile(
 												 guid:deposit_token,
 											     md5:info.md5sumHex,
 											     uploadName:upload_filename,
 											     name:upload_filename,
 											     filesize:info.filesize,
-											     uploadMimeType:upload_mime_type).save(flush:true)
-  
+											     uploadMimeType:upload_mime_type).save(flush:true)  
 			new_datafile.fileData = temp_file.getBytes()
+			ingestion_profile.datafiles << new_datafile
 			new_datafile.save(flush:true)
+			ingestion_profile.save(flush:true)
 			log.debug("Saved file on database ")
 			Job background_job = concurrencyManagerService.createJob { Job job ->
 				// Create a new session to run the ingest.
-				TSVIngestionService.ingest(new_datafile, job)
+				TSVIngestionService.ingest(ingestion_profile, new_datafile, job)
 				log.debug ("Async Data insert complete")
 			  }
 			  .startOrQueue()
-			redirect(controller:'resource',action:'show',id:"org.gokb.cred.DataFile:${new_datafile.id}")
+
+			redirect(controller:'resource',action:'show',id:"org.gokb.cred.IngestionProfile:${ingestion_profile.id}")
 		  }
 		}
 		catch ( Exception e ) {

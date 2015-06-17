@@ -8,6 +8,9 @@
     <li class="active"><a href="#details" data-toggle="tab">Datafile Details</a></li>
     <li><a href="#addprops" data-toggle="tab">Custom Fields <span class="badge badge-warning">${d.additionalProperties?.size()}</span></a></li>
     <li><a href="#review" data-toggle="tab">Review Requests <span class="badge badge-warning">${d.reviewRequests?.size()}</span></a></li>
+    <g:if test="${d.tipps}">
+      <li><a href="#tipps" data-toggle="tab">Tipps <span class="badge badge-warning">${d.tipps?.size()}</span></a></li>
+	</g:if>
   </ul>
   <div id="my-tab-content" class="tab-content">
     <div class="tab-pane active" id="details">
@@ -30,7 +33,6 @@
         <dd> ${d.doctype} </dd>
         <dt> <g:annotatedLabel owner="${d}" property="fileData">File</g:annotatedLabel> </dt>
         <dd> <g:link controller="workflow" action="download" id="${d.guid}">  Download file </g:link></dd>
-
         <dt> <g:annotatedLabel owner="${d}" property="attachedTo">Attached To</g:annotatedLabel> </dt>
         <dd>
           <table class="table table-striped table-bordered">
@@ -40,15 +42,17 @@
               </tr>
             </thead>
             <tbody>
-              <g:each in="${d.incomingCombos}" var="r">
-                <g:set var="linkedoid"
+              <g:each in="${d.incomingCombos}" var="r"> 
+                <g:if test="${r.fromComponent.class.name!='org.gokb.cred.TitleInstancePackagePlatform'}">
+                  <g:set var="linkedoid"
                   value="${org.gokb.cred.KBComponent.deproxy(r.fromComponent).class.name}:${r.fromComponent.id}" />
-                <tr>
-                  <td><g:link controller="resource" action="show"
+                  <tr>
+                    <td><g:link controller="resource" action="show"
                       id="${linkedoid}">
                       ${r.fromComponent.name}
                     </g:link></td>
-                </tr>
+                  </tr>
+                </g:if>
               </g:each>
             </tbody>
           </table>
@@ -64,6 +68,9 @@
       <g:render template="revreqtab" contextPath="../apptemplates" model="${[d:d]}" />
     </div>
 
+    <div class="tab-pane" id="tipps">
+       <g:render template="tippdisplay" contextPath="../apptemplates" model="${[d:d.tipps]}" />
+    </div>
 
   </div>
   <g:render template="componentStatus" contextPath="../apptemplates" model="${[d:displayobj, rd:refdata_properties, dtype:'KBComponent']}" />

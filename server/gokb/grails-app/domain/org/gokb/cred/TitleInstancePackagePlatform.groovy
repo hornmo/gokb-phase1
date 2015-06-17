@@ -44,6 +44,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     title               : TitleInstance,
     derivedFrom         : TitleInstancePackagePlatform,
     masterTipp          : TitleInstancePackagePlatform,
+	datafile			: DataFile
   ]
 
   static mappedByCombo = [

@@ -4,30 +4,30 @@ import javax.persistence.Transient
 
 class Subject extends KBComponent {
 
-  RefdataValue clsmrk
   RefdataValue scheme
+  String heading
 
   static manyByCombo = [
-	  children: Subject
 	]
   
   static hasByCombo = [
-	//scheme: Classification,
-  	parent: Subject 
+
   ]
 
   static mappedByCombo = [
-	 children: 'parent'  //my children to my parent in quotes
+
   ]
 
   static mapping = {
-    clsmrk column:'subj_class'
+
 	scheme column:'subj_scheme'
+	heading column:'subj_heading'
   }
 
   static constraints = {
-    clsmrk(nullable:true, blank:false)
+
 	scheme(nullable:true, blank:false)
+	heading(nullable:true, blank:false)
   }
   
   /**

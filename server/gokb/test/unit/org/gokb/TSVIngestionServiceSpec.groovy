@@ -1,7 +1,6 @@
 package org.gokb
 
 import grails.test.mixin.TestFor
-import org.gokb.cred.EBookDataFile
 import spock.lang.Specification
 
 /**

@@ -418,7 +418,7 @@ class BootStrap {
     RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Film").save()
     RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Image").save()
     RefdataCategory.lookupOrCreate("TitleInstance.Medium", "Journal").save()
-	RefdataCategory.lookupOrCreate("TitleInstance.Medium", "eBook").save()
+    RefdataCategory.lookupOrCreate("TitleInstance.Medium", "eBook").save()
 
     RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "Unknown").save()
     RefdataCategory.lookupOrCreate("TitleInstance.OAStatus", "Full OA").save()
@@ -772,13 +772,14 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('SPR', 'Author').save()
     RefdataCategory.lookupOrCreate('SPR', 'Illustrator').save()
     RefdataCategory.lookupOrCreate('SPR', 'Editor').save()
-
-    RefdataCategory.lookupOrCreate('Dewey', '500 Natural sciences & mathematics').save()
-    RefdataCategory.lookupOrCreate('Dewey', '501 Philosophy & theory').save()
 	
 	RefdataCategory.lookupOrCreate('Subject.Classification', 'Dewey').save()
 	RefdataCategory.lookupOrCreate('Subject.Classification', 'LCCN').save()
-	
+	RefdataCategory.lookupOrCreate('Subject.Classification', 'Assigned by Provider').save()
+	RefdataCategory.lookupOrCreate('Subject.Classification', 'BISAC').save()
+	RefdataCategory.lookupOrCreate('Subject.Classification', 'MESH').save()
+	RefdataCategory.lookupOrCreate('Subject.Classification', 'LCSH').save()
+		
 	RefdataCategory.lookupOrCreate('ebook.filetype','kbart2').save()
 	RefdataCategory.lookupOrCreate('ebook.filetype','ingram').save()
 	RefdataCategory.lookupOrCreate('ebook.filetype','ybp').save()

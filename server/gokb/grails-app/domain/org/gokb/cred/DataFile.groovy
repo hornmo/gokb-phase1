@@ -34,13 +34,19 @@ class DataFile extends KBComponent {
     fileData column:'df_file_data'
     canEdit column:'df_canEdit'
   }
-
+  
+  static hasByCombo = [
+	  profile: IngestionProfile
+  ]
+  
   static manyByCombo = [
-    attachedToComponents : KBComponent
+    attachedToComponents : KBComponent,
+	tipps: TitleInstancePackagePlatform
   ]
 
   static mappedByCombo = [
-    attachedToComponents : 'fileAttachments'
+    attachedToComponents : 'fileAttachments',
+	tipps: 'datafile'
   ]
 
     /**
