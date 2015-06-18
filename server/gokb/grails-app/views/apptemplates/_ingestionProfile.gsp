@@ -13,7 +13,7 @@
   <ul id="tabs" class="nav nav-tabs">
     <li class="active"><a href="#details" data-toggle="tab">Ingestion Profile Details</a></li>
     <li><a href="#addprops" data-toggle="tab">Custom Fields <span class="badge badge-warning">${d.additionalProperties?.size()}</span></a></li>
-    <li><a href="#datafiles" data-toggle="tab">Data Files <span class="badge badge-warning">${d.datafiles?.size()}</span></a></li>
+    <li><a href="#ingestions" data-toggle="tab">Ingestions <span class="badge badge-warning">${d.ingestions?.size()}</span></a></li>
     <li><a href="#newtipps" data-toggle="tab">New TIPPS <span class="badge badge-warning">${d.newTipps?.size()}</span></a></li>
     <li><a href="#gonetipps" data-toggle="tab">Removed TIPPS <span class="badge badge-warning">${d.missingTipps?.size()}</span></a></li>
       
@@ -35,13 +35,11 @@
     <div class="tab-pane" id="addprops">
        <g:render template="addprops" contextPath="../apptemplates" model="${[d:d]}" />
     </div>
-    <div class="tab-pane" id="datafiles">
-      <g:render template="simpleCombos" contextPath="../apptemplates" 
-      model="${[d:d, property:'datafiles', cols:[
-		  [expr:'uploadName', colhead:'File Name', action:'link'],
-		  [expr:'dateCreated', colhead:'Creation Date'],
-		  [expr:'tipps.size()', colhead:'# Tipps']
-		  ]  ]}" />
+    <div class="tab-pane" id="ingestions">
+      <g:render template="componentIngestion" contextPath="../apptemplates"
+				model="${[d:d, property:'ingestions', cols:[[expr:'component.name',colhead:'Name', action:'link-component'],
+						                                    [expr:'component.dateCreated', colhead: 'Creation Date'],
+														    [expr:'component.tipps.size()', colhead:'# Tipps']]]}" />
     </div>
     
     <div class="tab-pane" id="newtipps">

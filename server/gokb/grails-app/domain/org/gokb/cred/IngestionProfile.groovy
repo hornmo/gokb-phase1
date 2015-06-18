@@ -7,9 +7,17 @@ class IngestionProfile extends KBComponent {
 	RefdataValue packageType
 	String platformUrl
 	
-	static manyByCombo = [
-		datafiles: DataFile
+	static hasMany = [
+		ingestions: ComponentIngestionSource
 	]
+	
+	static mappedBy = [
+		ingestions:'profile'
+	]
+	
+//	static manyByCombo = [
+//		datafiles: DataFile
+//	]
 	
 	static hasByCombo = [
 		source: Source	
@@ -35,10 +43,12 @@ class IngestionProfile extends KBComponent {
 	  @Transient
 	  def getMissingTipps() {
 		  def result=[]
-		  if (datafiles && datafiles.size()>1) {
-			  Collections.sort(datafiles, {a, b -> a.dateCreated <=> b.dateCreated} as Comparator)
-			  result=datafiles[datafiles.size()-2].tipps
-			  result-=datafiles.last().tipps
+		  if (ingestions && ingestions.size()>1) {
+			  // can't directly sort a hibernate collection, and we only need the components anyway
+			  def sources = ingestions.collect() {it.component}
+			  Collections.sort(sources, {a, b -> a.dateCreated <=> b.dateCreated} as Comparator)
+			  result=sources[sources.size()-2].tipps
+			  result-=sources.last().tipps
 		  }
 		  result
 	  }
@@ -46,11 +56,14 @@ class IngestionProfile extends KBComponent {
 	  @Transient
 	  def getNewTipps() {
 		  def result=[]
-		  if (datafiles) {
-			  Collections.sort(datafiles, {a, b -> a.dateCreated <=> b.dateCreated} as Comparator)
-			  result=datafiles.last().tipps
-			  if (datafiles.size()>1) {
-				  result-=datafiles[datafiles.size()-2].tipps
+		  if (ingestions) {
+			  // can't directly sort a hibernate collection, and we only need the components anyway
+			  def sources = ingestions.collect() {it.component}
+			  
+			  Collections.sort(sources, {a, b -> a.dateCreated <=> b.dateCreated} as Comparator)
+			  result=sources.last().tipps
+			  if (sources.size()>1) {
+			  	  result-=sources[sources.size()-2].tipps
 			  }
 		  }
 		  result

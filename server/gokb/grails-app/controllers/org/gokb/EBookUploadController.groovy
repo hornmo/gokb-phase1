@@ -108,7 +108,11 @@ class EBookUploadController {
 											     filesize:info.filesize,
 											     uploadMimeType:upload_mime_type).save(flush:true)  
 			new_datafile.fileData = temp_file.getBytes()
-			ingestion_profile.datafiles << new_datafile
+			if (!ingestion_profile.ingestions) {
+				ingestion_profile.ingestions=[]	
+			}
+			ingestion_profile.ingestions << new ComponentIngestionSource(profile:ingestion_profile,
+																		 component:new_datafile)
 			new_datafile.save(flush:true)
 			ingestion_profile.save(flush:true)
 			log.debug("Saved file on database ")
