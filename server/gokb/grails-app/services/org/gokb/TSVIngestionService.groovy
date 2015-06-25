@@ -476,6 +476,7 @@ class TSVIngestionService {
 		}
 		the_profile.save(flush:true)
 		for (tipp in the_profile.missingTipps) {
+                        log.debug("Soft delete missing tipp ${tipp.id}");
 			tipp.deleteSoft()
 			tipp.save()
 		}
