@@ -468,7 +468,10 @@ class TSVIngestionService {
 		
 		//now its converted, ingest it into the database.
 		for (int x=0; x<kbart_beans.size;x++) {
-			writeToDB(kbart_beans[x], the_profile, datafile, old_tipps)
+                        TitleInstance.withNewTransaction {
+			  writeToDB(kbart_beans[x], the_profile, datafile, old_tipps)
+                          log.debug("Written title");
+                        }
 			job?.setProgress( (x/kbart_beans.size()*100) as int)
 		}
 		the_profile.save(flush:true)
