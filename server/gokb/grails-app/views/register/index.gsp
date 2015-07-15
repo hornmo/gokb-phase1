@@ -39,6 +39,20 @@
 		<s2ui:passwordFieldRow name='password2' labelCode='user.password2.label' bean="${command}"
                              size='40' labelCodeDefault='Password (again)' value="${command.password2}"/>
 
+        <tr class="prop">
+            <td valign="top" class="name">
+                <label for="orgName">Organisation</label>
+            </td>
+            <td valign="top" class="value">
+                <select name="orgSelector" id="orgName" value="${command.orgName}" data-type="select">
+                    <option value="">No selection</option>
+                    <g:each in="${orgs}" var="o">
+                        <option value="${o[0]}">${o[1]}</option>
+                    </g:each>
+                </select>
+            </td>
+        </tr>
+
 	</tbody>
 	</table>
 

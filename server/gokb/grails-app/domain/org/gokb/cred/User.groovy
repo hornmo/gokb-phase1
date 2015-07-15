@@ -21,6 +21,7 @@ class User {
   boolean accountLocked
   boolean passwordExpired
   Long defaultPageSize = new Long(10)
+  Org org
 
   RefdataValue showQuickView
   RefdataValue showInfoIcon
