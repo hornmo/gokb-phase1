@@ -23,10 +23,10 @@
             </g:if>
           </td>
           <td style="vertical-align:top; white-space: nowrap;">
-            <i class="fa fa-question-circle fa-2x" style="color:${(ac.value?.value=='Unknown'||ac.value?.value==null)?'blue':'grey'};"></i>&nbsp;
-            <i class="fa fa-times-circle fa-2x" style="color:${ac.value?.value=='Red'?'red':'grey'};"></i> &nbsp;
-            <i class="fa fa-info-circle fa-2x" style="color:${ac.value?.value=='Amber'?'#FFBF00':'grey'};"></i>&nbsp;
-            <i class="fa fa-check-circle fa-2x" style="color:${ac.value?.value=='Green'?'green':'grey'};"></i>
+            <i class="fa fa-question-circle fa-2x ${(ac.value?.value=='Unknown'||ac.value?.value==null)?'text-neutral':''}" ></i>&nbsp;
+            <i class="fa fa-times-circle fa-2x ${ac.value?.value=='Red'?'text-negative':''}"></i> &nbsp;
+            <i class="fa fa-info-circle fa-2x" ${ac.value?.value=='Amber'?'text-contentious':''}"></i>&nbsp;
+            <i class="fa fa-check-circle fa-2x ${ac.value?.value=='Green'?'text-positive':''}"></i>
           </td>
           <td>
             <ul>

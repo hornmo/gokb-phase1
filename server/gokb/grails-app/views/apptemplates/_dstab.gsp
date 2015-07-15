@@ -1,4 +1,4 @@
-<table class="table table-bordered">
+<table id="tab-decision-suppport" class="table table-bordered">
   <thead>
     <tr>
       <th>Criterion</th>
@@ -14,20 +14,11 @@
       <g:each in="${dsl.criterion}" var="c">
         <tr>
           <td style="vertical-align:top; white-space: nowrap;">&nbsp;&nbsp;${c[0]}</td>
-          <td style="white-space: nowrap;">
-            <i id="${c[2]}_${c[3]}_q" class="fa fa-question-circle fa-2x" style="color:${(c[1]=='Unknown'||c[1]==null)?'blue':'grey'};"></i>&nbsp;
-
-            <a href='javascript:setAppliedCriterion("${c[2]}","${c[3]}","r","red");'><i id="${c[2]}_${c[3]}_r" 
-                                                                          class="fa fa-times-circle fa-2x" 
-                                                                          style="color:${c[1]=='Red'?'red':'grey'};"></i></a> &nbsp;
-
-            <a href='javascript:setAppliedCriterion("${c[2]}","${c[3]}","a","#FFBF00");'><i id="${c[2]}_${c[3]}_a" 
-                                                                          class="fa fa-info-circle fa-2x" 
-                                                                          style="color:${c[1]=='Amber'?'#FFBF00':'grey'};"></i></a>&nbsp;
-
-            <a href='javascript:setAppliedCriterion("${c[2]}","${c[3]}","g","green");'><i id="${c[2]}_${c[3]}_g" 
-                                                                          class="fa fa-check-circle fa-2x" 
-                                                                          style="color:${c[1]=='Green'?'green':'grey'};"></i></a>
+          <td class="vote" style="white-space: nowrap;">
+            <i id="${c[2]}_${c[3]}_q_neutral" class="fa fa-question-circle fa-2x${(c[1]=='Unknown'||c[1]==null)?' text-neutral':''}"></i>&nbsp;
+            <a id="${c[2]}_${c[3]}_r_negative" href='#' ${c[1]=='Red'?'class="text-negative"':''} ><i class="fa fa-times-circle fa-2x"></i></a> &nbsp;
+            <a id="${c[2]}_${c[3]}_a_contentious" href='#' ${c[1]=='Amber'?'class="text-contentious"':''} ><i class="fa fa-info-circle fa-2x"></i></a>&nbsp;
+            <a id="${c[2]}_${c[3]}_g_positive" href='#' ${c[1]=='Green'?'class="text-positive"':''} ><i class="fa fa-check-circle fa-2x"></i></a>
           </td>
           <td style="vertical-align:top;">
 
@@ -60,40 +51,6 @@
 </table>
 
 <asset:script type="text/javascript">
-  function setAppliedCriterion(component_id, criterion_id, v ,c) {
-    // grey out then select the appropriate
-    $('#'+component_id+'_'+criterion_id+'_q').css('color','grey');
-    $('#'+component_id+'_'+criterion_id+'_r').css('color','grey');
-    $('#'+component_id+'_'+criterion_id+'_a').css('color','grey');
-    $('#'+component_id+'_'+criterion_id+'_g').css('color','grey');
-
-    $('#'+component_id+'_'+criterion_id+'_'+v).css('color',c);
-
-    $.ajax({
-      url: gokb.config.baseUrl+'/ajaxSupport/appliedCriterion?comp='+component_id+'&crit='+criterion_id+'&val='+v,
-      dataType:"jsonp",
-      crossDomain: true
-    }).done(function(data) {
-      // alert(data);
-    });
-  }
-
-  function addNote(id) {
-
-    var v = $('#'+id+'_newnote').val();
-
-    $.ajax({
-      // libs and culture: 0894-8631
-      url: gokb.config.baseUrl+'/ajaxSupport/criterionComment?comp='+id+'&comment='+v,
-      dataType:"jsonp",
-      crossDomain: true
-    }).done(function(data) {
-      // alert(data);
-    });
-
-    $('#'+id+'_notestable').append("<tr><td>"+v+"</td></tr>");
-    $('#'+id+'_newnote').val('');
-    
-    return false;
-  }
+  
+  
 </asset:script>

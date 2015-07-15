@@ -542,7 +542,7 @@ class AjaxSupportController {
     }
 
 
-    return result as JSON
+    render result as JSON
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
@@ -567,6 +567,6 @@ class AjaxSupportController {
      
       log.debug("Found applied critirion ${current_applied} for ${idparts[0]} ${idparts[1]} ${component} ${crit}");
     }
-    return result as JSON
+    render result as JSON
   }
 }  

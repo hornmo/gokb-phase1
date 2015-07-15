@@ -17,6 +17,7 @@
 //=require annotations
 //=require select-all-multistate
 //=require moment.min
+//=require decisionSupport
 
 
 // Global namespace for GOKb functions.
