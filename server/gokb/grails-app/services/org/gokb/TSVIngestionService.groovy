@@ -454,10 +454,13 @@ class TSVIngestionService {
 
 	//these are now ingestions of profiles.
   def ingest(the_profile, datafile, job=null) {
+
 		log.debug("TSV ingestion called")
+		def ingest_date = new Date();
+
 		job?.setProgress(0)
 		//not suer we need this totaslly...
-		final Map<String, Set<Long>> old_tipps = [:]
+
 		def kbart_beans=[]
 		//we kind of assume that we need to convert to kbart
 		if ("${the_profile.packageType}"!='kbart2') {
@@ -469,7 +472,7 @@ class TSVIngestionService {
 		//now its converted, ingest it into the database.
 		for (int x=0; x<kbart_beans.size;x++) {
       TitleInstance.withNewTransaction {
-			  writeToDB(kbart_beans[x], the_profile, datafile, old_tipps)
+			  writeToDB(kbart_beans[x], the_profile, datafile, ingest_date )
         log.debug("Written title");
       }
 			job?.setProgress( (x/kbart_beans.size()*100) as int)
@@ -488,7 +491,7 @@ class TSVIngestionService {
   }
 
 	//this method does a lot of checking, and then tries to save the title to the DB.
-	def writeToDB(the_kbart, the_profile, the_datafile, old_tipps) {
+	def writeToDB(the_kbart, the_profile, the_datafile, ingest_date) {
 		//simplest method is to assume that everything is new.
 		//however the golden rule is to check that something already exists and then
 		//re-use it.
@@ -523,7 +526,7 @@ class TSVIngestionService {
 				the_kbart.additional_authors.each { author ->
 					addPerson(author, author_role, title)
 				}
-				processTIPPS(the_profile.source, the_datafile, the_kbart, the_package, title, platform, old_tipps)
+				processTIPPS(the_profile.source, the_datafile, the_kbart, the_package, title, platform, ingest_date)
 			  } else {
  			    log.warn("problem getting the title...")
 			  }
@@ -566,8 +569,16 @@ class TSVIngestionService {
 		the_date
 	}
 
-	def processTIPPS(the_source, the_datafile, the_kbart, the_package, the_title, the_platform, old_tipps) {
+	def processTIPPS(the_source,
+		               the_datafile,
+									 the_kbart,
+									 the_package,
+									 the_title,
+									 the_platform,
+									 ingest_date) {
+
 		log.debug("TSVIngestionService::processTIPPS with ${the_package}, ${the_title}, ${the_platform}")
+
 		//first, try to find the platform. all we have to go in the host of the url.
 		def tipp_values = [
 			url:the_kbart.title_url?:'',
@@ -580,20 +591,21 @@ class TSVIngestionService {
 			source:the_source,
 			accessStartDate:new Date()
 		]
+
 		def tipp=null
+
 		tipp = the_title.getTipps().find { def the_tipp ->
 			// Filter tipps for matching pkg and platform.
 			boolean matched = the_tipp.pkg == the_package
 			matched = matched && the_tipp.hostPlatform == the_platform
 			matched
 		}
+
 		if (tipp==null) {
 			log.debug("create a new tipp");
 			tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_values)
 		} else {
 			log.debug("found a tipp to use")
-			// Remove from the list.
-			getPackageTipps(old_tipps, the_package.name, the_package).remove(tipp.id)
 
 			// Set all properties on the object.
 			tipp_values.each { prop, value ->
@@ -603,33 +615,14 @@ class TSVIngestionService {
 			  }
 			}
 		}
+
+		tipp.lastSeen = ingest_date;
 		log.debug("save")
 		tipp.save(failOnError:true, flush:true)
 		if (!the_datafile.tipps.find {_tipp->_tipp.id==tipp.id}) {
 		  the_datafile.tipps << tipp
 		}
 		the_datafile.save(flush:true)
-	}
-
-	private Set<Long> getPackageTipps (final Map<String, Set<Long>> packageTippLists, String pkgName, Package pkg) {
-
-			// Get from the map.
-			Set<Long> tipps = packageTippLists.get(pkgName)
-
-			// If it's null then we haven't initialised it yet.
-			if (tipps == null) {
-			  log.debug("Loading tipps for package ${pkgName} from db and caching locally");
-			  tipps = []
-			  for (def tipp: pkg.getTipps()) {
-				tipps << tipp.id
-			  }
-
-			  // Ensure we add to the map.
-			  packageTippLists.put(pkgName, tipps)
-			}
-
-			// Return the TIPPs.
-			tipps
 	}
 
 	//this is a lot more complex than this for journals. (which uses refine)
