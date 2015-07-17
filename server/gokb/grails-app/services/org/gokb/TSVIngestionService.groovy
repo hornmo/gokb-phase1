@@ -455,36 +455,64 @@ class TSVIngestionService {
 	//these are now ingestions of profiles.
   def ingest(the_profile, datafile, job=null) {
 
+
 		log.debug("TSV ingestion called")
-		def ingest_date = new Date();
 
-		job?.setProgress(0)
-		//not suer we need this totaslly...
+		try {
 
-		def kbart_beans=[]
-		//we kind of assume that we need to convert to kbart
-		if ("${the_profile.packageType}"!='kbart2') {
-			kbart_beans = convertToKbart(the_profile, datafile)
-		} else {
-			kbart_beans = getKbartBeansFromKBartFile(datafile)
+			def ingest_date = new Date();
+			log.debug("Ingest date is ${ingest_date}")
+
+			job?.setProgress(0)
+			//not suer we need this totaslly...
+
+			def kbart_beans=[]
+			//we kind of assume that we need to convert to kbart
+			if ("${the_profile.packageType}"!='kbart2') {
+				kbart_beans = convertToKbart(the_profile, datafile)
+			} else {
+				kbart_beans = getKbartBeansFromKBartFile(datafile)
+			}
+
+
+
+			//now its converted, ingest it into the database.
+			for (int x=0; x<kbart_beans.size;x++) {
+	      TitleInstance.withNewTransaction {
+				  writeToDB(kbart_beans[x], the_profile, datafile, ingest_date )
+	      }
+				job?.setProgress( (x/kbart_beans.size()*100) as int)
+			}
+
+			// the_profile.save(flush:true)
+			def the_package=handlePackage(the_profile)
+
+	    log.debug("Expunging old tipps [Tipps belonging to ${the_package} last seen prior to ${ingest_date}] - ${the_profile.packageName}");
+			try {
+
+	      // Find all tipps in this package which have a lastSeen before the ingest date
+			  def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
+			                   'from TitleInstancePackagePlatform as tipp, Combo as c '+
+											   'where c.fromComponent=? and c.toComponent=tipp and tipp.lastSeen < ?',
+												[the_package,ingest_date]);
+
+				q.each { tipp ->
+					log.debug("Soft delete missing tipp ${tipp.id}");
+					// tipp.deleteSoft()
+					tipp.accessEndDate = new Date();
+					tipp.save()
+				}
+				log.debug("Completed tipp cleanup")
+			}
+			catch ( Exception e ) {
+				log.error("Problem",e)
+			}
+			finally {
+				log.debug("Done")
+			}
 		}
-
-		//now its converted, ingest it into the database.
-		for (int x=0; x<kbart_beans.size;x++) {
-      TitleInstance.withNewTransaction {
-			  writeToDB(kbart_beans[x], the_profile, datafile, ingest_date )
-        log.debug("Written title");
-      }
-			job?.setProgress( (x/kbart_beans.size()*100) as int)
-		}
-
-		the_profile.save(flush:true)
-
-		for (tipp in the_profile.missingTipps) {
-      log.debug("Soft delete missing tipp ${tipp.id}");
-			// tipp.deleteSoft()
-			tipp.accessEndDate = new Date();
-			tipp.save()
+		catch ( Exception e ) {
+			log.error("Problem",e)
 		}
 
 		job?.setProgress(100)
@@ -589,7 +617,7 @@ class TSVIngestionService {
 			coverageNote:the_kbart.coverage_depth?:'',
 			notes:the_kbart.notes?:'',
 			source:the_source,
-			accessStartDate:new Date()
+			accessStartDate:ingest_date
 		]
 
 		def tipp=null
@@ -634,8 +662,7 @@ class TSVIngestionService {
 		switch (packages.size()) {
 			case 0:
 				//no match. create a new platform!
-				result = new Package(name:the_profile.packageName,
-									 source:the_profile.source)
+				result = new Package(name:the_profile.packageName, source:the_profile.source)
 				if (result.save(flush:true, failOnError:true)) {
 					log.debug("saved new package: ${result}")
 				} else {
@@ -650,7 +677,7 @@ class TSVIngestionService {
 				log.debug("match package found: ${result}")
 			break
 			default:
-				log.error("found multiple packages when looking for ${name}")
+				log.error("found multiple packages when looking for ${the_profile.packageName}")
 			break
 		}
 		result;
@@ -707,14 +734,19 @@ class TSVIngestionService {
 		while(nl!=null) {
 			Map result=[:]
 			for (key in col_positions.keySet()) {
-				//so, springer files seem to start with a dodgy character (int) 65279
-				if (((int)key.toCharArray()[0])==65279) {
-					def index=key.getAt(1..key.length()-1)
-					result[index]=nl[col_positions[key]]
-				} else {
-				  result[key]=nl[col_positions[key]]
+				log.debug("Checking ${key}")
+				if ( key && key.length() > 0 ) {
+					//so, springer files seem to start with a dodgy character (int) 65279
+					if (((int)key.toCharArray()[0])==65279) {
+						def index=key.getAt(1..key.length()-1)
+						result[index]=nl[col_positions[key]]
+					} else {
+					  result[key]=nl[col_positions[key]]
+					}
 				}
-			}
+
+  		}
+
 			log.debug(result)
 			log.debug(new KBartRecord(result))
 
