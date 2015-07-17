@@ -174,7 +174,7 @@ class TSVIngestionService {
 			  log.debug("No TI could be matched by name. New TI, flag for review.")
 			  // Could not match on title either.
 			  // Create a new TI but attach a Review request to it.
-			  the_title = new TitleInstance(name:title)
+			  the_title = new BookInstance(name:title)
 			  ReviewRequest.raise(
 				  the_title,
 				  "New TI created.",
@@ -536,28 +536,35 @@ class TSVIngestionService {
 			  the_kbart.additional_isbns.each { identifier ->
 			    identifiers << [type: 'isbn', value:identifier]
 			  }
-			  log.debug("looking for book using these identifiers: ${identifiers}")
-			  def title = find(the_kbart.publication_title, identifiers)
-			  title.source=the_profile.source
-			  log.debug("title found: for ${the_kbart.publication_title}:${title}")
-			  def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory,
-				  									 		   grailsApplication.config.kbart2.authorRole)
-			  def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory,
-				  											   grailsApplication.config.kbart2.editorRole)
+				if ( identifiers.size() > 0 ) {
+				  log.debug("looking for book using these identifiers: ${identifiers}")
+				  def title = find(the_kbart.publication_title, identifiers)
+				  title.source=the_profile.source
+				  log.debug("title found: for ${the_kbart.publication_title}:${title}")
+				  def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory,
+					  									 		   grailsApplication.config.kbart2.authorRole)
+				  def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory,
+					  											   grailsApplication.config.kbart2.editorRole)
 
-			  if (title) {
-				addOtherFieldsToTitle(title, the_kbart)
-				addPublisher(the_kbart.publisher_name, title)
-				addPerson(the_kbart.first_author, author_role, title);
-				addPerson(the_kbart.first_editor, editor_role, title);
-				addSubjects(the_kbart.subjects, title)
-				the_kbart.additional_authors.each { author ->
-					addPerson(author, author_role, title)
+				  if (title) {
+						addOtherFieldsToTitle(title, the_kbart)
+						addPublisher(the_kbart.publisher_name, title)
+						addPerson(the_kbart.first_author, author_role, title);
+						addPerson(the_kbart.first_editor, editor_role, title);
+						addSubjects(the_kbart.subjects, title)
+						the_kbart.additional_authors.each { author ->
+							addPerson(author, author_role, title)
+						}
+						processTIPPS(the_profile.source, the_datafile, the_kbart, the_package, title, platform, ingest_date)
+				  } else {
+	 			    log.warn("problem getting the title...")
+				  }
+
+  			}
+				else {
+					log.debug("Skipping row - no identifiers")
 				}
-				processTIPPS(the_profile.source, the_datafile, the_kbart, the_package, title, platform, ingest_date)
-			  } else {
- 			    log.warn("problem getting the title...")
-			  }
+
 			} else {
 			log.warn("couldn't reslove package - title not added.");
 			}
@@ -617,7 +624,8 @@ class TSVIngestionService {
 			coverageNote:the_kbart.coverage_depth?:'',
 			notes:the_kbart.notes?:'',
 			source:the_source,
-			accessStartDate:ingest_date
+			accessStartDate:ingest_date,
+			lastSeen:ingest_date
 		]
 
 		def tipp=null
@@ -630,7 +638,7 @@ class TSVIngestionService {
 		}
 
 		if (tipp==null) {
-			log.debug("create a new tipp");
+			log.debug("create a new tipp as at ${ingest_date}");
 			tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_values)
 		} else {
 			log.debug("found a tipp to use")
@@ -644,7 +652,9 @@ class TSVIngestionService {
 			}
 		}
 
-		tipp.lastSeen = ingest_date;
+    if ( ingest_date )
+		  tipp.lastSeen = ingest_date;
+
 		log.debug("save")
 		tipp.save(failOnError:true, flush:true)
 		if (!the_datafile.tipps.find {_tipp->_tipp.id==tipp.id}) {
@@ -739,9 +749,13 @@ class TSVIngestionService {
 					//so, springer files seem to start with a dodgy character (int) 65279
 					if (((int)key.toCharArray()[0])==65279) {
 						def index=key.getAt(1..key.length()-1)
-						result[index]=nl[col_positions[key]]
+						//if ( ( col_positions[key] ) && ( nl.length < col_positions[key] ) ) {
+							result[index]=nl[col_positions[key]]
+						//}
 					} else {
-					  result[key]=nl[col_positions[key]]
+						//if ( ( col_positions[key] ) && ( nl.length < col_positions[key] ) ) {
+					    result[key]=nl[col_positions[key]]
+						//}
 					}
 				}
 
