@@ -36,16 +36,16 @@ import org.gokb.cred.User;
 
 @Transactional
 class TSVIngestionService {
-	
+
 	def grailsApplication
 	def titleLookupService
 	def componentLookupService
 	def refdataCategory
-	
-	/* This class is a BIG rip off of the TitleLookupService, it really should be 
+
+	/* This class is a BIG rip off of the TitleLookupService, it really should be
 	 * refactored to use inheritance of something!
 	 */
-  
+
 	private Map class_one_match (def ids) {
 	  // Get the class 1 identifier namespaces.
 	  Set<String> class_one_ids = grailsApplication.config.identifiers.class_ones
@@ -88,7 +88,7 @@ class TSVIngestionService {
 			}
 			// Did the ID yield a Title match?
 			log.debug("title match ${title_match}")
-			if (!title_match) { 
+			if (!title_match) {
 			  log.debug ("No class one ti match.")
 			  // We should see if the current ID namespace should be cross checked with another.
 			  def other_ns = null
@@ -133,7 +133,7 @@ class TSVIngestionService {
 	  }
 	  result
 	}
-  
+
 	def find (String title, def identifiers, def user = null, def project = null) {
 	  // The TitleInstance
 	  BookInstance the_title = null
@@ -208,7 +208,7 @@ class TSVIngestionService {
 		  log.debug ("Title class one identifier lookup yielded ${matches.size()} matches. This is a bad match. Ingest should skip this row.")
 		  break;
 	  }
-  
+
 	  // If we have a title then lets set the publisher and ids...
 	  if (the_title) {
 		// The current IDs of the title
@@ -231,11 +231,11 @@ class TSVIngestionService {
 	  }
 	  the_title
 	}
-	
+
 	//for now, we can only do authors. (kbart limitation)
 	def BookInstance addPerson (person_name, role, ti, user=null, project = null) {
 	  if (person_name) {
-	    def person = componentLookupService.findComponents('org.gokb.cred.Person', person_name)  	  
+	    def person = componentLookupService.findComponents('org.gokb.cred.Person', person_name)
 		log.debug("this was found for person: ${person}");
 		switch(person.size()) {
 			case 0:
@@ -291,11 +291,11 @@ class TSVIngestionService {
 			default:
 			log.debug ("Person lookup yielded ${person.size()} matches. Not really sure which person to use, so not using any.")
 			break
-		}  
+		}
 	  }
 	  ti
 	}
-  
+
 	def BookInstance addSubjects(the_subjects, the_title) {
 		if (the_subjects) {
 			for (the_subject in the_subjects) {
@@ -322,7 +322,7 @@ class TSVIngestionService {
 		}
 		the_title
 	}
-	
+
 	def BookInstance addPublisher (publisher_name, ti, user = null, project = null) {
 	  if ( publisher_name != null ) {
 		def publisher = componentLookupService.findComponents('org.gokb.cred.Org',publisher_name)
@@ -381,25 +381,25 @@ class TSVIngestionService {
 	  } //publisher_name !=null
 	  ti
 	}
-  
+
 	private BookInstance attemptStringMatch (String norm_title) {
-  
+
 	  // Default to return null.
 	  BookInstance ti = null
-  
+
 	  // Try and find a title by matching the norm string.
 	  // Default to the min threshold
 	  double best_distance = grailsApplication.config.cosine.good_threshold
-  
+
 	  BookInstance.list().each { BookInstance t ->
-  
+
 		// Get the distance and then determine whether to add to the list or
 		double distance = GOKbTextUtils.cosineSimilarity(norm_title, GOKbTextUtils.generateComparableKey(t.getName()))
 		if (distance >= best_distance) {
 		  ti = t
 		  best_distance = distance
 		}
-  
+
 		t.variantNames?.each { vn ->
 		  distance = GOKbTextUtils.cosineSimilarity(norm_title, vn.normVariantName)
 		  if (distance >= best_distance) {
@@ -408,11 +408,11 @@ class TSVIngestionService {
 		  }
 		}
 	  }
-  
+
 	  // Return what we have found... If anything.
 	  ti
 	}
-  
+
 	private TitleInstance singleTIMatch(String title, String norm_title, TitleInstance ti, User user, project = null) {
 	  // The threshold for a good match.
 	  double threshold = grailsApplication.config.cosine.good_threshold
@@ -448,12 +448,12 @@ class TSVIngestionService {
 			  )
 		  break
 	  }
-  
+
 	  ti
 	}
-	
+
 	//these are now ingestions of profiles.
-    def ingest(the_profile, datafile, job=null) {
+  def ingest(the_profile, datafile, job=null) {
 		log.debug("TSV ingestion called")
 		job?.setProgress(0)
 		//not suer we need this totaslly...
@@ -465,30 +465,33 @@ class TSVIngestionService {
 		} else {
 			kbart_beans = getKbartBeansFromKBartFile(datafile)
 		}
-		
+
 		//now its converted, ingest it into the database.
 		for (int x=0; x<kbart_beans.size;x++) {
-                        TitleInstance.withNewTransaction {
+      TitleInstance.withNewTransaction {
 			  writeToDB(kbart_beans[x], the_profile, datafile, old_tipps)
-                          log.debug("Written title");
-                        }
+        log.debug("Written title");
+      }
 			job?.setProgress( (x/kbart_beans.size()*100) as int)
 		}
+
 		the_profile.save(flush:true)
+
 		for (tipp in the_profile.missingTipps) {
-                        log.debug("Soft delete missing tipp ${tipp.id}");
-			tipp.deleteSoft()
+      log.debug("Soft delete missing tipp ${tipp.id}");
+			// tipp.deleteSoft()
+			tipp.accessEndDate = new Date();
 			tipp.save()
 		}
-		
+
 		job?.setProgress(100)
-    }
-	
+  }
+
 	//this method does a lot of checking, and then tries to save the title to the DB.
 	def writeToDB(the_kbart, the_profile, the_datafile, old_tipps) {
 		//simplest method is to assume that everything is new.
 		//however the golden rule is to check that something already exists and then
-		//re-use it. 
+		//re-use it.
 		log.debug("TSVINgestionService:writeToDB")
 		//first we need a platform:
 		URL platform_url=new URL(the_kbart.title_url?:the_profile.platformUrl)
@@ -531,7 +534,7 @@ class TSVIngestionService {
 		  log.warn("couldn't reslove platform - title not added.");
 		}
 	}
-	
+
 	def addOtherFieldsToTitle(title, the_kbart) {
 		title.medium=RefdataCategory.lookupOrCreate("TitleInstance.Medium", "eBook")
 		log.debug("title.medium set")
@@ -544,9 +547,9 @@ class TSVIngestionService {
 		title.volumeNumber=the_kbart.monograph_volume
 		log.debug("save title")
 		title.save()
-	
+
 	}
-	
+
 	Date parseDate(String datestr) {
 		// Parse the date.
 		Date the_date = null
@@ -562,7 +565,7 @@ class TSVIngestionService {
 		}
 		the_date
 	}
-	
+
 	def processTIPPS(the_source, the_datafile, the_kbart, the_package, the_title, the_platform, old_tipps) {
 		log.debug("TSVIngestionService::processTIPPS with ${the_package}, ${the_title}, ${the_platform}")
 		//first, try to find the platform. all we have to go in the host of the url.
@@ -574,7 +577,8 @@ class TSVIngestionService {
 			embargo:the_kbart.embargo_info?:'',
 			coverageNote:the_kbart.coverage_depth?:'',
 			notes:the_kbart.notes?:'',
-			source:the_source
+			source:the_source,
+			accessStartDate:new Date()
 		]
 		def tipp=null
 		tipp = the_title.getTipps().find { def the_tipp ->
@@ -595,7 +599,7 @@ class TSVIngestionService {
 			tipp_values.each { prop, value ->
 			  // Only set the property if we have a value.
 			  if (value != null && value != "") {
-				tipp."${prop}" = value
+				  tipp."${prop}" = value
 			  }
 			}
 		}
@@ -606,12 +610,12 @@ class TSVIngestionService {
 		}
 		the_datafile.save(flush:true)
 	}
-	
+
 	private Set<Long> getPackageTipps (final Map<String, Set<Long>> packageTippLists, String pkgName, Package pkg) {
-		
+
 			// Get from the map.
 			Set<Long> tipps = packageTippLists.get(pkgName)
-		
+
 			// If it's null then we haven't initialised it yet.
 			if (tipps == null) {
 			  log.debug("Loading tipps for package ${pkgName} from db and caching locally");
@@ -619,15 +623,15 @@ class TSVIngestionService {
 			  for (def tipp: pkg.getTipps()) {
 				tipps << tipp.id
 			  }
-		
+
 			  // Ensure we add to the map.
 			  packageTippLists.put(pkgName, tipps)
 			}
-		
+
 			// Return the TIPPs.
 			tipps
-		  }
-	
+	}
+
 	//this is a lot more complex than this for journals. (which uses refine)
 	//theres no notion in here of retiring packages for example.
 	//for this v1, I've made this very simple - probably too simple.
@@ -658,7 +662,7 @@ class TSVIngestionService {
 		}
 		result;
 	}
-	
+
 	def handlePlatform(host, the_source) {
 		def result;
 		def platforms=Platform.findAllByPrimaryUrlIlike(host);
@@ -667,7 +671,7 @@ class TSVIngestionService {
 				//no match. create a new platform!
 				result = new Platform(name:host, primaryUrl:host, source:the_source)
 				if (result.save(flush:true, failOnError:true)) {
-					log.debug("saved new platform: ${result}")	
+					log.debug("saved new platform: ${result}")
 				} else {
 					for (error in result.errors) {
 						log.error(error);
@@ -685,7 +689,7 @@ class TSVIngestionService {
 		}
 		result;
 	}
-	
+
 	//note- don't do the additional fields just yet, these will need to be mapped in
 	def getKbartBeansFromKBartFile(the_data) {
 		log.debug("kbart2 file, so use CSV to Bean") //except that this doesn't always work :(
@@ -696,8 +700,8 @@ class TSVIngestionService {
 		def csv = new CSVReader(new InputStreamReader(new ByteArrayInputStream(the_data.fileData)),'\t' as char)
 		//results=ctb.parse(hcnms, csv)
 		//quick check that results aren't null...
-		
-		
+
+
 		Map col_positions=[:]
 		String[] header = csv.readNext()
 		int ctr = 0
@@ -717,20 +721,20 @@ class TSVIngestionService {
 				} else {
 				  result[key]=nl[col_positions[key]]
 				}
-			}			
+			}
 			log.debug(result)
 			log.debug(new KBartRecord(result))
-			
+
 			//this is a cheat cos I don't get why springer files don't work!
-			
-			
+
+
 			results<<new KBartRecord(result)
-			nl=csv.readNext()	
+			nl=csv.readNext()
 		}
 		log.debug(results)
 		results
 	}
-	
+
 	def convertToKbart(the_profile, data_file) {
 		def results = []
 		log.debug("in convert to Kbart2")
@@ -749,7 +753,7 @@ class TSVIngestionService {
 		}
         String [] header = csv.readNext()
         int ctr = 0
-		header.each { 
+		header.each {
           col_positions [ it ] = ctr++
         }
 		String [] nl = csv.readNext()
@@ -766,12 +770,12 @@ class TSVIngestionService {
 					if ( parts.size() > 1 && fileRule.additional!=null ) {
 						for (int x=1; x<parts.size(); x++) {
 							result[fileRule.additional] << parts[x]
-						}	
+						}
 						done=true
 					}
 				}
 				if (fileRule.additional!=null && !done) {
-				  result[fileRule.additional] << data		
+				  result[fileRule.additional] << data
 				} else {
 				  result[fileRule.kbart]=data
 				}

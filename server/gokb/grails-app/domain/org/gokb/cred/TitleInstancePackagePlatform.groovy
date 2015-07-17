@@ -33,7 +33,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     "paymentType"   : "Paid",
     "coverageDepth" : "Fulltext"
   ]
-  
+
   static touchOnUpdate = [
     "pkg"
   ]
@@ -63,7 +63,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   public getPersistentId() {
     "gokb:TIPP:${title?.id}:${pkg?.id}"
   }
-  
+
   public static isTypeCreatable(boolean defaultValue = false) {
     return defaultValue;
   }
@@ -126,10 +126,10 @@ class TitleInstancePackagePlatform extends KBComponent {
    */
   public static tiplAwareCreate(tipp_fields = [:]) {
     def result = new TitleInstancePackagePlatform(tipp_fields)
-    
+
     // See if there is a TIPL
     TitleInstancePlatform.withNewTransaction { t ->
-    
+
       TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url);
     }
     result
