@@ -55,7 +55,7 @@ abstract class KBComponent {
 
   @Transient
   protected void touchAllDependants () {
-    
+
     //TODO: SO - This really needs to be reviewed. There must be an easy way to do this without hibernate freaking out. Commenting out for now.
 
     // The update closure.
@@ -213,7 +213,7 @@ abstract class KBComponent {
    * Generic name for the component. For packages, package name, for journals the journal title. Try to follow DC-Title style naming
    * conventions when trying to decide what to map to this property in a subclass. The name should be a string that reasonably identifies this
    * object when placed in a list of other components.
-   */ 
+   */
   String name
 
   /**
@@ -524,7 +524,7 @@ abstract class KBComponent {
 
   @Transient
   String getIdentifierValue(idtype) {
-    
+
     // As ids are combo controlled it should be enough just to call find here.
     // This will return only the first match and stop looking afterwards.
     // Null returned if no match.
@@ -630,20 +630,20 @@ abstract class KBComponent {
     return getCombosByPropertyNameAndStatus(propertyName,null)
   }
 
-  @Transient 
+  @Transient
   public List<Combo> getCombosByPropertyNameAndStatus(propertyName,status) {
     log.debug("KBComponent::getCombosByPropertyNameAndStatus::${propertyName}|${status}")
 
     def combos
     def status_ref
-    def hql_query 
+    def hql_query
     def hql_params = []
 
     if ( this.id != null ) {
       // Unsaved components can't have combo relations
       RefdataValue type = RefdataCategory.lookupOrCreate(Combo.RD_TYPE, getComboTypeValue(propertyName))
       if(status && status!="null") status_ref = RefdataCategory.lookupOrCreate(Combo.RD_STATUS, status);
-      hql_query = "from Combo where type=? " 
+      hql_query = "from Combo where type=? "
       hql_params += type
       if (isComboReverse(propertyName)) {
         hql_query += " and toComponent=?"
@@ -662,7 +662,7 @@ abstract class KBComponent {
   }
 
   @Override
-  @Transient 
+  @Transient
   public String getDerivedName() {
     return name;
   }
@@ -721,11 +721,11 @@ abstract class KBComponent {
     // II: ToDo Steve - Please review this.
     // explanation :: I'm not fully sure what side effects this might have, but in local_props below deproxy is called
     // for each property. skippedTitles is a list of strings and was causing hell on earth in the A_Api which was unable to tell the
-    // difference between f(x) and f([x]) closure called with a list containing one argument. Not been able to fully 
+    // difference between f(x) and f([x]) closure called with a list containing one argument. Not been able to fully
     // wrap my head around A_Api yet, so added skippedTitles here as a stop-gap. Substantial changes already made to A_Api and don't
     // want to change any more yet.
     // added variantNames, ids
-    
+
     // SO: Think the issue was actually that deproxy was being called on the list of items when iterating [each (el in val)]
     // should have been called on el not val.
     def ignore_list = [
@@ -754,7 +754,7 @@ abstract class KBComponent {
     localProps += allComboPropertyNames
 
     localProps.each { prop ->
-      
+
       // Ignore the ones in the list.
       if (prop in ignore_list) {
         return
@@ -809,9 +809,9 @@ abstract class KBComponent {
   @Transient
   public <T extends KBComponent> T sync (T to) {
     if (to) {
-      
+
       T me = this
-      
+
       // Update Master tipp.
       Map propVals = allPropertiesAndVals
       log.debug("Found ${propVals.size()} properties to synchronize.")
@@ -820,15 +820,15 @@ abstract class KBComponent {
         log.debug("(${count}) Attempting to copy '${p}' from component ${me.id} to ${to.id}...")
         if (v != null) {
           def toHas = has(to, "${p}")
-          
+
           if (toHas) {
             log.debug ("\t...sending value ${v.toString()}")
             to."${p}" = v
           } else {
             log.debug ("\t...target doesn't support '${p}'")
           }
-          
-          
+
+
         } else {
           log.debug("\t...value is null")
         }
@@ -923,10 +923,11 @@ abstract class KBComponent {
   }
 
   @Transient
-  def getDecisionSupportLines() {
+  /**
+   * Return an array of DS Critertia, with the counts of Amber, Green, Red and the List of Notes against that criteria for this object
+   */
+  def getDecisionSupportLines(user=null) {
     // Return an array consisting of DS Categories, in each category the Criterion and then null or the currently selected value
-    // def criterion = DSCriterion.executeQuery('select c,c,c from DSCriterion as c');
-    // def criterion = DSCriterion.executeQuery('select c, dsac from DSCriterion as c left join c.appliedCriterion as dsac where dsac.appliedTo.id = ?',[this.id]);
     def result = [:]
     def criterion = null;
 
@@ -934,19 +935,45 @@ abstract class KBComponent {
     if ( getId() != null ) {
       // N.B. Long standing bug in hibernate means that dsac.appliedTo = ? throws a 'can only ref props in the driving table' exception
       // Workaround is to use the id directly
-      criterion = DSCriterion.executeQuery('select c, dsac from DSCriterion as c left outer join c.appliedCriterion as dsac with dsac.appliedTo.id = ?',getId());
+      // criterion = DSCriterion.executeQuery('select c, dsac from DSCriterion as c left outer join c.appliedCriterion as dsac with dsac.appliedTo.id = ?',getId());
+      // Get all criteria
+      criterion = DSCriterion.executeQuery('select c from DSCriterion as c');
       criterion.each { c ->
-        def cat_code = c[0].owner.code
+        // For this criteria
+        def cat_code = c.owner.code
 
-        if ( result[cat_code] == null ) 
-          result[cat_code] = [description:c[0].owner.description,criterion:[]]
+        if ( result[cat_code] == null )
+          result[cat_code] = [description:c.owner.description,criterion:[]]
+
+        def red_counts =   DSCriterion.executeQuery('select count(a) from DSAppliedCriterion as a where a.criterion=? and a.appliedTo.id = ? and a.value.value = ?',[c,getId(),'R'])[0];
+        def amber_counts =   DSCriterion.executeQuery('select count(a) from DSAppliedCriterion as a where a.criterion=? and a.appliedTo.id = ? and a.value.value = ?',[c,getId(),'A'])[0];
+        def green_counts =   DSCriterion.executeQuery('select count(a) from DSAppliedCriterion as a where a.criterion=? and a.appliedTo.id = ? and a.value.value = ?',[c,getId(),'G'])[0];
+
+        def user_thinks = null;
+
+        if ( user )
+          user_thinks = DSCriterion.executeQuery('select count(a) from DSAppliedCriterion as a where a.criterion=? and a.appliedTo.id = ? and a.voter=?',[c,getId(),user]);
+
+        def notes= DSNote.executeQuery('select n from DSNote as n where n.component.id=? and n.criterion=? order by n.commentTimestamp',[this.getId(), c])
+
+
+        // Count up how many R/A/G votes there are for this criteria against this object
+        result[cat_code].criterion.add([criteria_name : c.title,
+                                        red_votes: red_counts,
+                                        amber_votes: amber_counts,
+                                        green_votes: green_counts,
+                                        you_think: user_thinks,
+                                        system_thinks:0,
+                                        criteria_id:c.id,
+                                        component_id:getId(),
+                                        notes:notes]);
 
         // Add criteria title, current value if present, a string of componentId:CriteriaId (For setter/getter)
-        result[cat_code].criterion.add([c[0].title, 
-                                        c[1]?.value?.value, 
-                                        getId(),
-                                        c[0].id,
-                                        c[1]])
+        //result[cat_code].criterion.add([c[0].title,
+        //                                c[1]?.value?.value,
+        //                                getId(),
+        //                                c[0].id,
+        //                                c[1]])
       }
     }
     else {

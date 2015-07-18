@@ -13,10 +13,10 @@ class AjaxSupportController {
 
   def genericOIDService
   def aclUtilService
-
+  def springSecurityService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
-  def edit() { 
+  def edit() {
     // edit [name:name, value:project:12, pk:org.gokb.cred.Package:2950, action:edit, controller:ajaxSupport]
     log.debug("edit ${params}");
     def result = [:]
@@ -54,7 +54,7 @@ class AjaxSupportController {
     def result = [:]
 
     def config = refdata_config[params.id]
-	
+
 	if (!config) {
 	  // Use generic config.
 	  config = [
@@ -66,7 +66,7 @@ class AjaxSupportController {
 		format:'simple'
 	  ]
 	}
-	
+
     if ( config ) {
       def query_params = []
       config.qryParams.each { qp ->
@@ -161,7 +161,7 @@ class AjaxSupportController {
    * @param __recip : Optional - If set, then new_object.recip will point to __context
    * @param __addToColl : The name of the local set to which the new object should be added
    * @param All other parameters are taken to be property names on newObjectClass and used to init the new instance.
-   */ 
+   */
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def addToCollection() {
     log.debug("AjaxController::addToCollection ${params}");
@@ -247,7 +247,7 @@ class AjaxSupportController {
               log.debug("Problem ${e}");
             }
           }
-        } 
+        }
         else {
           // Stand alone object.. Save it!
           log.debug("Saving stand along reference object");
@@ -262,7 +262,7 @@ class AjaxSupportController {
         }
 
         // Special combo processing
-        if ( ( new_obj != null ) && 
+        if ( ( new_obj != null ) &&
              ( new_obj.hasProperty('hasByCombo') ) && ( new_obj.hasByCombo != null ) ) {
           log.debug("Processing hasByCombo properties...${new_obj.hasByCombo}");
           new_obj.hasByCombo.keySet().each { hbc ->
@@ -305,12 +305,12 @@ class AjaxSupportController {
     def contextObj = resolveOID2(params.__context)
     if ( contextObj ) {
       def item_to_remove = resolveOID2(params.__itemToRemove)
-      if ( item_to_remove ) { 
+      if ( item_to_remove ) {
 //		log.debug(params.__otherEnd)
-//		log.debug("data is: "+item_to_remove[params.__otherEnd]);  
+//		log.debug("data is: "+item_to_remove[params.__otherEnd]);
 //		item_to_remove[params.__otherEnd]=null;
 //		log.debug("data is: "+item_to_remove[params.__otherEnd]);
-	  
+
 		  if ( ( item_to_remove != null ) &&
 			  ( item_to_remove.hasProperty('hasByCombo') ) && ( item_to_remove.hasByCombo != null ) ) {
 //		   log.debug("Processing hasByCombo properties...${item_to_remove.hasByCombo} on item_to_remove");
@@ -369,7 +369,7 @@ class AjaxSupportController {
     else {
       log.error("Unable to resolve context obj : ${params.__context}");
     }
-   
+
     def redirect_to = request.getHeader('referer')
 
     if ( params.redirect ) {
@@ -473,12 +473,12 @@ class AjaxSupportController {
         if ( params.resultProp ) {
           result = value ? value[params.resultProp] : ''
         }
-        
+
         // We should clear the session values for a user if this is a user to force reload of the,
         // parameters.
         if (target instanceof User) {
           session.userPereferences = null
-        } 
+        }
         else {
           if ( value ) {
             result = renderObjectValue(value);
@@ -548,25 +548,20 @@ class AjaxSupportController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def criterionComment() {
     log.debug('criterionComment:'+params);
-    def result = [status:'OK']
-    def idparts = params.comp.split('_');
-    log.debug(idparts);
-    if ( idparts.length == 2 ) {
-      def component = KBComponent.get(idparts[0]);
-      def crit = DSCriterion.get(idparts[1]);
 
-      def current_applied = DSAppliedCriterion.findByAppliedToAndCriterion(component,crit);
+    // /criterionComment?comp='+component_id+'&crit='+criteria_id'+comment='+v,
+    def user = springSecurityService.currentUser
 
-      if ( current_applied == null ) {
-        // Create a new applied criterion to comment on
-        def rdv = RefdataCategory.lookupOrCreate('RAG', 'Unknown');
-        current_applied = new DSAppliedCriterion(appliedTo:component, criterion:crit, value: rdv).save(failOnError:true)
-      }
+    def component = KBComponent.get(params.comp);
+    def crit = DSCriterion.get(params.crit);
 
-      def note = new DSNote(criterion:current_applied, note:params.comment).save(failOnError:true);
-     
-      log.debug("Found applied critirion ${current_applied} for ${idparts[0]} ${idparts[1]} ${component} ${crit}");
-    }
+    def note = new DSNote(criterion:crit, component:component, note:params.comment, user:user, commentTimestamp:new Date()).save(flush:true,failOnError:true);
+
+    def result = [status:'OK', user:user.displayName, note:params.comment, timestamp: note.commentTimestamp]
+
+
+    log.debug("criterionComment:: ${result}");
+
     render result as JSON
   }
-}  
+}
