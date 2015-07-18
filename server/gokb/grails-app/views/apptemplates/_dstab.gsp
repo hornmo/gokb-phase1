@@ -19,9 +19,9 @@
               </tr>
               <tr>
                 <td><strong>Your Assessment:</strong></td>
-                <td><a id="_r_negative" href='#' class="" style="opacity: 0.4;" ><i class="fa fa-times-circle fa-2x"></i></a> </td>
-                <td><a id="_a_contentious" href='#' class=""  style="opacity: 0.4;"><i class="fa fa-info-circle fa-2x"></i> </a> </td>
-                <td><a id="_g_positive" href='#' class="" style="opacity: 0.4;"><i class="fa fa-check-circle fa-2x"></i></a> </td>
+                <td><a id="_r_negative" href='#' class="" style="opacity: 0.4;" onClick="vote('${c.component_id}','${c.criteria_id}','Red');"><i class="fa fa-times-circle fa-2x"></i></a> </td>
+                <td><a id="_a_contentious" href='#' class=""  style="opacity: 0.4;" onClick="vote('${c.component_id}','${c.criteria_id}','Amber');"><i class="fa fa-info-circle fa-2x"></i> </a> </td>
+                <td><a id="_g_positive" href='#' class="" style="opacity: 0.4;" onClick="vote('${c.component_id}','${c.criteria_id}','Green');"><i class="fa fa-check-circle fa-2x"></i></a> </td>
               </tr>
               <tr>
                 <td>Official Assessment:</td>

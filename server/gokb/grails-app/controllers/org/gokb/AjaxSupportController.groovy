@@ -546,6 +546,41 @@ class AjaxSupportController {
   }
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def criterionVote() {
+    log.debug('criterionComment:'+params);
+
+    // /criterionComment?comp='+component_id+'&crit='+criteria_id'+comment='+v,
+    def user = springSecurityService.currentUser
+
+    def component = KBComponent.get(params.comp);
+    def crit = DSCriterion.get(params.crit);
+
+    def rdv = RefdataCategory.lookupOrCreate('RAG', params.vote).save()
+
+    def existing_applied_criteria = DSAppliedCriterion.findByVoterAndCriterionAndAppliedTo(user,crit,component)
+    if ( existing_applied_criteria == null ) {
+      existing_applied_criteria = new DSAppliedCriterion(voter:user, criterion:crit, appliedTo:component, value:rdv).save(flush:true, failOnError:true)
+    }
+    else {
+      log.debug("Updating value to ${rdv}")
+      existing_applied_criteria.value = rdv;
+      existing_applied_criteria.save(flush:true, failOnError:true);
+    }
+
+    def red_counts =   DSCriterion.executeQuery('select count(a) from DSAppliedCriterion as a where a.criterion=? and a.appliedTo.id = ? and a.value.value = ?',[crit,component.getId(),'Red'])[0];
+    def amber_counts =   DSCriterion.executeQuery('select count(a) from DSAppliedCriterion as a where a.criterion=? and a.appliedTo.id = ? and a.value.value = ?',[crit,component.getId(),'Amber'])[0];
+    def green_counts =   DSCriterion.executeQuery('select count(a) from DSAppliedCriterion as a where a.criterion=? and a.appliedTo.id = ? and a.value.value = ?',[crit,component.getId(),'Green'])[0];
+
+
+    def result = [status:'OK', user:user.displayName, red_count:red_counts, amber_count:amber_counts, green_count:green_counts, user_vote:params.vote]
+
+
+    log.debug("criterionVote:: ${result}");
+
+    render result as JSON
+  }
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def criterionComment() {
     log.debug('criterionComment:'+params);
 

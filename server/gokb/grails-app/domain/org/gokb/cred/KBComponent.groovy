@@ -945,9 +945,9 @@ abstract class KBComponent {
         if ( result[cat_code] == null )
           result[cat_code] = [description:c.owner.description,criterion:[]]
 
-        def red_counts =   DSCriterion.executeQuery('select count(a) from DSAppliedCriterion as a where a.criterion=? and a.appliedTo.id = ? and a.value.value = ?',[c,getId(),'R'])[0];
-        def amber_counts =   DSCriterion.executeQuery('select count(a) from DSAppliedCriterion as a where a.criterion=? and a.appliedTo.id = ? and a.value.value = ?',[c,getId(),'A'])[0];
-        def green_counts =   DSCriterion.executeQuery('select count(a) from DSAppliedCriterion as a where a.criterion=? and a.appliedTo.id = ? and a.value.value = ?',[c,getId(),'G'])[0];
+        def red_counts =   DSCriterion.executeQuery('select count(a) from DSAppliedCriterion as a where a.criterion=? and a.appliedTo.id = ? and a.value.value = ?',[c,getId(),'Red'])[0];
+        def amber_counts =   DSCriterion.executeQuery('select count(a) from DSAppliedCriterion as a where a.criterion=? and a.appliedTo.id = ? and a.value.value = ?',[c,getId(),'Amber'])[0];
+        def green_counts =   DSCriterion.executeQuery('select count(a) from DSAppliedCriterion as a where a.criterion=? and a.appliedTo.id = ? and a.value.value = ?',[c,getId(),'Green'])[0];
 
         def user_thinks = null;
 

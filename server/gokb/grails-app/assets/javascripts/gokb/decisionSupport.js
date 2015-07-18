@@ -29,6 +29,22 @@ function setAppliedCriterion(target, component_id, criterion_id, v ,c) {
   });
 }
 
+function vote(component_id,criteria_id,assessment) {
+  alert("Vote");
+  $.ajax({
+    // libs and culture: 0894-8631
+    url: gokb.config.baseUrl+'/ajaxSupport/criterionVote?comp='+component_id+'&crit='+criteria_id+'&vote='+assessment,
+    dataType:"json"
+  }).done(function(data) {
+    // alert(data);
+    // $('#'+component_id+'_'+criteria_id+'_notestable').append("<tr><td>"+data.user+"</td><td>"+data.timestamp+"</td><td>"+data.note+"</td></tr>");
+    // $('#'+component_id+'_'+criteria_id+'_newnote').val('');
+
+  });
+
+}
+
+
 function addNote(component_id,criteria_id) {
 
   var v = $('#'+component_id+'_'+criteria_id+'_newnote').val();
