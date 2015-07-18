@@ -951,8 +951,12 @@ abstract class KBComponent {
 
         def user_thinks = null;
 
-        if ( user )
-          user_thinks = DSCriterion.executeQuery('select count(a) from DSAppliedCriterion as a where a.criterion=? and a.appliedTo.id = ? and a.voter=?',[c,getId(),user]);
+        if ( user ) {
+          def utq = DSCriterion.executeQuery('select a from DSAppliedCriterion as a where a.criterion=? and a.appliedTo.id = ? and a.voter=?',[c,getId(),user]);
+          if ( utq.size() == 1 ) {
+            user_thinks=utq[0]            
+          }
+        }
 
         def notes= DSNote.executeQuery('select n from DSNote as n where n.component.id=? and n.criterion=? order by n.commentTimestamp',[this.getId(), c])
 
@@ -962,7 +966,7 @@ abstract class KBComponent {
                                         red_votes: red_counts,
                                         amber_votes: amber_counts,
                                         green_votes: green_counts,
-                                        you_think: user_thinks,
+                                        you_think: user_thinks?.value?.value,
                                         system_thinks:0,
                                         criteria_id:c.id,
                                         component_id:getId(),

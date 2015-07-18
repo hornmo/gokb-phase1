@@ -30,7 +30,6 @@ function setAppliedCriterion(target, component_id, criterion_id, v ,c) {
 }
 
 function vote(component_id,criteria_id,assessment) {
-  alert("Vote");
   $.ajax({
     // libs and culture: 0894-8631
     url: gokb.config.baseUrl+'/ajaxSupport/criterionVote?comp='+component_id+'&crit='+criteria_id+'&vote='+assessment,
@@ -39,9 +38,23 @@ function vote(component_id,criteria_id,assessment) {
     // alert(data);
     // $('#'+component_id+'_'+criteria_id+'_notestable').append("<tr><td>"+data.user+"</td><td>"+data.timestamp+"</td><td>"+data.note+"</td></tr>");
     // $('#'+component_id+'_'+criteria_id+'_newnote').val('');
+    $('#'+component_id+'_'+criteria_id+'_r').text(data.red_count);
+    $('#'+component_id+'_'+criteria_id+'_a').text(data.amber_count);
+    $('#'+component_id+'_'+criteria_id+'_g').text(data.green_count);
+    $('#'+component_id+'_'+criteria_id+'_u_g').css('opacity','0.4');
+    $('#'+component_id+'_'+criteria_id+'_u_a').css('opacity','0.4');
+    $('#'+component_id+'_'+criteria_id+'_u_r').css('opacity','0.4');
+    if ( assessment==='Red') {
+      $('#'+component_id+'_'+criteria_id+'_u_r').css('opacity','1.0');
+    }
+    else if ( assessment==='Amber') {
+      $('#'+component_id+'_'+criteria_id+'_u_a').css('opacity','1.0');
+    }
+    else{
+      $('#'+component_id+'_'+criteria_id+'_u_g').css('opacity','1.0');
+    }
 
   });
-
 }
 
 
