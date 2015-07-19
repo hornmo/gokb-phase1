@@ -3,6 +3,7 @@ package org.gokb
 class GenericOIDService {
 
   def grailsApplication
+  def classCache = [:]
 
   def resolveOID(oid) {
 
@@ -10,13 +11,22 @@ class GenericOIDService {
 
     def result = null;
 
-    def domain_class=null;
 
-    domain_class = grailsApplication.getArtefact('Domain',oid_components[0])
+    def clazz = null;
 
+    clazz = classCache[oid_components[0]]
 
-    if ( domain_class ) {
-      result = domain_class.getClazz().get(oid_components[1])
+    if ( clazz == null ) {
+      def domain_class=null;
+      domain_class = grailsApplication.getArtefact('Domain',oid_components[0])
+      if ( domain_class ) {
+        clazz = domain_class.getClazz()
+        classCache[oid_components[0]] = clazz
+      }
+    }
+
+    if ( clazz ) {
+      result = clazz.get(oid_components[1])
     }
     else {
       log.error("resolve OID failed to identify a domain class. Input was ${oid_components}");
@@ -28,15 +38,25 @@ class GenericOIDService {
   def resolveOID2(oid) {
     def oid_components = oid.split(':');
     def result = null;
-    def domain_class=null;
-    domain_class = grailsApplication.getArtefact('Domain',oid_components[0])
-    if ( domain_class ) {
+
+    clazz = classCache[oid_components[0]]
+
+    if ( clazz == null ) {
+      def domain_class=null;
+      domain_class = grailsApplication.getArtefact('Domain',oid_components[0])
+      if ( domain_class ) {
+        clazz = domain_class.getClazz()
+        classCache[oid_components[0]] = clazz
+      }
+    }
+
+    if ( clazz ) {
       if ( oid_components[1]=='__new__' ) {
-        result = domain_class.getClazz().refdataCreate(oid_components)
+        result = clazz.refdataCreate(oid_components)
         log.debug("Result of create ${oid} is ${result}");
       }
       else {
-        result = domain_class.getClazz().get(oid_components[1])
+        result = clazz.get(oid_components[1])
       }
     }
     else {
@@ -50,4 +70,3 @@ class GenericOIDService {
     // and aoi.aclClass = ac and ac.className = ? and aoi....
   // }
 }
-

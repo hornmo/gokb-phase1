@@ -30,7 +30,7 @@ class Package extends KBComponent {
   String listVerifier
   User userListVerifier
   Date listVerifiedDate
-  
+
   private static refdataDefaults = [
     "scope"       : "Front File",
     "listStatus"  : "Checked",
@@ -40,14 +40,14 @@ class Package extends KBComponent {
     "paymentType" : "Unknown",
     "global"      : "Global"
   ]
-  
+
   static manyByCombo = [
     tipps         : TitleInstancePackagePlatform,
     children      : Package,
     curatoryGroups: CuratoryGroup,
-	
+
   ]
-  
+
   static hasByCombo = [
              parent : Package,
              broker : Org,
@@ -58,7 +58,7 @@ class Package extends KBComponent {
          'previous' : Package,
           successor : Package
   ]
-  
+
   static mappedByCombo = [
      children : 'parent',
     successor : 'previous'
@@ -102,25 +102,25 @@ class Package extends KBComponent {
 
     result
   }
-    
+
   public void deleteSoft (context) {
     // Call the delete method on the superClass.
     super.deleteSoft(context)
-    
+
     // Delete the tipps too as a TIPP should not exist without the associated,
     // package.
     def tipps = getTipps()
-     
+
     tipps.each { def tipp ->
-      
+
       // Ensure they aren't the javassist type classes here, as we will get a NoSuchMethod exception
       // thrown below if we don't.
       tipp = KBComponent.deproxy(tipp)
-      
+
       tipp.deleteSoft()
     }
   }
-  
+
 
   public void retire (context) {
     log.debug("package::retire");
@@ -136,7 +136,7 @@ class Package extends KBComponent {
 
     tipps.each { def t ->
       log.debug("deroxy ${t} ${t.class.name}");
-      
+
       // SO: There are 2 deproxy methods. One in the static context that takes in an argument and one,
       // against an instance which attempts to deproxy this component. Calling deproxy(t) here will invoke the method
       // against the current package. this.deproxy(t).
@@ -210,15 +210,15 @@ class Package extends KBComponent {
 where pkgCombo.toComponent=tipp
   and pkgCombo.fromComponent= ?
   and pkgCombo.type= ?
-  and hostPlatformCombo.toComponent=tipp 
+  and hostPlatformCombo.toComponent=tipp
   and hostPlatformCombo.type = ?
-  and titleCombo.toComponent=tipp 
+  and titleCombo.toComponent=tipp
   and titleCombo.type = ?
   and tipp.status != ?
 order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_ti_tipps,refdata_deleted],[readOnly: true]); // , fetchSize:250]);
 
     log.debug("Query complete...");
-    
+
     builder.'gokb' (attr) {
       builder.'package' (['id':(id)]) {
         'scope' ( scope?.value )
@@ -284,4 +284,25 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
     result
   }
 
+  @Transient
+  public getRecentActivity(n) {
+    def result = [];
+
+    // select tipp, accessStartDate, 'Added' from tipps UNION select tipp, accessEndDate, 'Removed' order by date
+    def additions = TitleInstancePackagePlatform.executeQuery('select tipp, tipp.accessStartDate, \'Added\' ' +
+                     'from TitleInstancePackagePlatform as tipp, Combo as c '+
+                     'where c.fromComponent=? and c.toComponent=tipp order by tipp.accessStartDate DESC',
+                    [this], [max:n]);
+    def deletions = TitleInstancePackagePlatform.executeQuery('select tipp, tipp.accessEndDate, \'Removed\' ' +
+                     'from TitleInstancePackagePlatform as tipp, Combo as c '+
+                     'where c.fromComponent=? and c.toComponent=tipp and tipp.accessEndDate is not null order by tipp.accessEndDate DESC',
+                    [this], [max:n]);
+
+    result.addAll(additions)
+    result.addAll(deletions)
+    result.sort {it[1]}
+    result = result.reverse();
+
+    return result;
+  }
 }

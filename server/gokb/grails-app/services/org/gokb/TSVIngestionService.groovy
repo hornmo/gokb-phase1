@@ -41,6 +41,9 @@ class TSVIngestionService {
 	def titleLookupService
 	def componentLookupService
 	def refdataCategory
+	def sessionFactory
+  def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
+
 
 	/* This class is a BIG rip off of the TitleLookupService, it really should be
 	 * refactored to use inheritance of something!
@@ -221,7 +224,7 @@ class TSVIngestionService {
 		log.debug(the_title.getIds())
 		// Try and save the result now.
 		if ( the_title.save(failOnError:true, flush:true) ) {
-		  log.debug("Succesfully saved BI: ${the_title.name} (This may not change the db)")
+		  log.debug("Succesfully saved TI: ${the_title.name} (This may not change the db)")
 		}
 		else {
 		  the_title.errors.each { e ->
@@ -455,6 +458,7 @@ class TSVIngestionService {
 	//these are now ingestions of profiles.
   def ingest(the_profile, datafile, job=null) {
 
+     def start_time = System.currentTimeMillis();
 
 		log.debug("TSV ingestion called")
 
@@ -467,6 +471,7 @@ class TSVIngestionService {
 			//not suer we need this totaslly...
 
 			def kbart_beans=[]
+
 			//we kind of assume that we need to convert to kbart
 			if ("${the_profile.packageType}"!='kbart2') {
 				kbart_beans = convertToKbart(the_profile, datafile)
@@ -475,11 +480,15 @@ class TSVIngestionService {
 			}
 
 
-
+      log.debug("Ingesting ${kbart_beans.size} rows")
 			//now its converted, ingest it into the database.
 			for (int x=0; x<kbart_beans.size;x++) {
+				log.debug("Ingesting ${x} of ${kbart_beans.size}")
 	      TitleInstance.withNewTransaction {
 				  writeToDB(kbart_beans[x], the_profile, datafile, ingest_date )
+					if ( x % 50 == 0 ) {
+						cleanUpGorm();
+					}
 	      }
 				job?.setProgress( (x/kbart_beans.size()*100) as int)
 			}
@@ -490,19 +499,21 @@ class TSVIngestionService {
 	    log.debug("Expunging old tipps [Tipps belonging to ${the_package} last seen prior to ${ingest_date}] - ${the_profile.packageName}");
 			try {
 
-	      // Find all tipps in this package which have a lastSeen before the ingest date
-			  def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
-			                   'from TitleInstancePackagePlatform as tipp, Combo as c '+
-											   'where c.fromComponent=? and c.toComponent=tipp and tipp.lastSeen < ?',
-												[the_package,ingest_date]);
+        TitleInstancePackagePlatform.withNewTransaction {
+		      // Find all tipps in this package which have a lastSeen before the ingest date
+				  def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
+				                   'from TitleInstancePackagePlatform as tipp, Combo as c '+
+												   'where c.fromComponent=? and c.toComponent=tipp and tipp.lastSeen < ?',
+													[the_package,ingest_date]);
 
-				q.each { tipp ->
-					log.debug("Soft delete missing tipp ${tipp.id}");
-					// tipp.deleteSoft()
-					tipp.accessEndDate = new Date();
-					tipp.save()
+					q.each { tipp ->
+						log.debug("Soft delete missing tipp ${tipp.id} - last seen was ${tipp.lastSeen}, ingest date was ${ingest_date}");
+						// tipp.deleteSoft()
+						tipp.accessEndDate = new Date();
+						tipp.save()
+					}
+					log.debug("Completed tipp cleanup")
 				}
-				log.debug("Completed tipp cleanup")
 			}
 			catch ( Exception e ) {
 				log.error("Problem",e)
@@ -516,6 +527,10 @@ class TSVIngestionService {
 		}
 
 		job?.setProgress(100)
+
+		def elapsed = System.currentTimeMillis()-start_time;
+
+		log.debug("ingest completed in ${elapsed}ms");
   }
 
 	//this method does a lot of checking, and then tries to save the title to the DB.
@@ -617,28 +632,44 @@ class TSVIngestionService {
 		//first, try to find the platform. all we have to go in the host of the url.
 		def tipp_values = [
 			url:the_kbart.title_url?:'',
-			pkg:the_package,
-			title:the_title,
-			hostPlatform:the_platform,
+			// pkg:the_package,
+			// title:the_title,
+			// hostPlatform:the_platform,
 			embargo:the_kbart.embargo_info?:'',
 			coverageNote:the_kbart.coverage_depth?:'',
 			notes:the_kbart.notes?:'',
-			source:the_source,
+			// source:the_source,
 			accessStartDate:ingest_date,
 			lastSeen:ingest_date
 		]
 
 		def tipp=null
 
-		tipp = the_title.getTipps().find { def the_tipp ->
+    // ToDo : This should be a query, not iterating through in memory - or it will be incrementally slower
+		//tipp = the_title.getTipps().find { def the_tipp ->
 			// Filter tipps for matching pkg and platform.
-			boolean matched = the_tipp.pkg == the_package
-			matched = matched && the_tipp.hostPlatform == the_platform
-			matched
+		//	boolean matched = the_tipp.pkg == the_package
+		//	matched = matched && the_tipp.hostPlatform == the_platform
+		//	matched
+		// }
+		def tipps = TitleInstance.executeQuery('select tipp from TitleInstancePackagePlatform as tipp, Combo as pkg_combo, Combo as title_combo, Combo as platform_combo  '+
+		                                       'where pkg_combo.toComponent=tipp and pkg_combo.fromComponent=?'+
+																					 'and platform_combo.toComponent=tipp and platform_combo.fromComponent = ?'+
+																					 'and title_combo.toComponent=tipp and title_combo.fromComponent = ?',
+																					[the_package,the_platform,the_title])
+		if ( tipps.size() == 1 ) {
+			tipp = tipps[0]
 		}
+
 
 		if (tipp==null) {
 			log.debug("create a new tipp as at ${ingest_date}");
+
+			// These are immutable for a TIPP - only set at creation time
+			tipp_values.pkg = the_package;
+			tipp_values.title = the_title;
+			tipp_values.hostPlatform = the_platform;
+			tipp_values.source = the_source;
 			tipp = TitleInstancePackagePlatform.tiplAwareCreate(tipp_values)
 		} else {
 			log.debug("found a tipp to use")
@@ -652,15 +683,18 @@ class TSVIngestionService {
 			}
 		}
 
-    if ( ingest_date )
+    if ( ingest_date ) {
+			log.debug("Update last seen on tipp ${tipp.id} - set to ${ingest_date}")
 		  tipp.lastSeen = ingest_date;
+		}
 
-		log.debug("save")
+		log.debug("save tipp")
 		tipp.save(failOnError:true, flush:true)
 		if (!the_datafile.tipps.find {_tipp->_tipp.id==tipp.id}) {
 		  the_datafile.tipps << tipp
 		}
 		the_datafile.save(flush:true)
+		log.debug("processTIPPS returning")
 	}
 
 	//this is a lot more complex than this for journals. (which uses refine)
@@ -825,4 +859,20 @@ class TSVIngestionService {
 		}
 		results
 	}
+
+	def cleanUpGorm() {
+		log.debug("Clean up GORM");
+
+		// Get the current session.
+		def session = sessionFactory.currentSession
+
+		// flush and clear the session.
+		session.flush()
+		session.clear()
+
+		// Clear the property instance map.
+		propertyInstanceMap.get().clear()
+  }
+
+
 }
