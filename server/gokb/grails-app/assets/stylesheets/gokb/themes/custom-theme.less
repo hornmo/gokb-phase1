@@ -307,20 +307,48 @@ h1.panel-title {
 }
 
 .triangle-border:before {
-  top:10px; /* controls vertical position */
-  bottom:auto;
-  left:-30px; /* value = - border-left-width - border-right-width */
-  border-width:15px 30px 15px 0;
-  border-color:transparent @panel-default-border;
-  color:@brand-primary;
-  position: relative;
+  top: 2px;
+  content: "";
+  display: block;
+  left: -15px; /* value = - border-left-width - border-right-width */
+  position: absolute;
+  width: 0;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-right: 10px solid @brand-warning;
 }
 
 /* creates the smaller  triangle */
 .triangle-border:after {
-  top:16px; /* value = (:before top) + (:before border-top) - (:after border-top) */
-  bottom:auto;
-  left:-21px; /* value = - border-left-width - border-right-width */
-  border-width:9px 21px 9px 0;
-  border-color:transparent @panel-default-border;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 13px 13px 0;
+  bottom: -13px;
+  content: "";
+  display: block;
+  left: 47px;
+  position: absolute;
+  width: 0;
+}
+
+.triangle-border {
+  background: none repeat scroll 0 0 #fff;
+  border: 5px solid @brand-warning;
+  border-radius: 10px;
+  color: #333;
+  margin: 0 0 .5em 1em;
+  padding: 5px;
+  position: relative;
+}
+
+.DSInlineBlock {
+  display: inline-block;
+}
+
+.DSAuthor {
+
+}
+
+.DSVote {
+
 }

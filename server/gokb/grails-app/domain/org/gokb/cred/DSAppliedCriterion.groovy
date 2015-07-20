@@ -4,13 +4,16 @@ import javax.persistence.Transient
 
 class DSAppliedCriterion {
 
-  KBComponent appliedTo
+  KBComponent appliedTo  //get decision support lines doesn't query for users
   DSCriterion criterion
   RefdataValue value
+  User user  //Addition so each user can have a say on decisions
 
   static hasMany = [
     notes: DSNote
   ]
+    // master comment needs to be shown why it's at the top badge
+    //group them via color , initials (on hover show person) and institutions - see CSS link
 
   static mappedBy = [
     notes: 'criterion'
@@ -26,6 +29,7 @@ class DSAppliedCriterion {
     appliedTo(nullable:false, blank:false)
     criterion(nullable:false, blank:false)
     value(nullable:false, blank:false)
+    user(nullable:false, blank:false)
   }
 
 }

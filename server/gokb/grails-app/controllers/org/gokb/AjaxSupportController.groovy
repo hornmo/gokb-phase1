@@ -13,7 +13,7 @@ class AjaxSupportController {
 
   def genericOIDService
   def aclUtilService
-
+  def springSecurityService
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def edit() { 
@@ -521,6 +521,7 @@ class AjaxSupportController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def appliedCriterion() {
+      log.debug("applied criterion AJAXSupportController - ${params} ");
     def result = [status:'OK']
 
     // val:r, comp:139862, crit:1
@@ -533,7 +534,8 @@ class AjaxSupportController {
 
     if ( current_applied == null ) {
       // log.debug("Create new applied criterion");
-      current_applied = new DSAppliedCriterion(appliedTo:component, criterion:crit, value: rdv).save(failOnError:true)
+      def user = springSecurityService.currentUser
+      current_applied = new DSAppliedCriterion(user: user, appliedTo:component, criterion:crit, value: rdv).save(failOnError:true)
     }
     else {
       // log.debug("Update existing");
@@ -547,26 +549,62 @@ class AjaxSupportController {
 
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def criterionComment() {
+    log.debug('CRITERION COMMENT HAS BEEN CALLED!:'+params);
     log.debug('criterionComment:'+params);
-    def result = [status:'OK']
-    def idparts = params.comp.split('_');
+    def result    = [:]
+    result.status = 'OK'
+    def idparts   = params.comp.split('_');
     log.debug(idparts);
     if ( idparts.length == 2 ) {
       def component = KBComponent.get(idparts[0]);
-      def crit = DSCriterion.get(idparts[1]);
+      def crit      = DSCriterion.get(idparts[1]);
 
       def current_applied = DSAppliedCriterion.findByAppliedToAndCriterion(component,crit);
 
       if ( current_applied == null ) {
         // Create a new applied criterion to comment on
-        def rdv = RefdataCategory.lookupOrCreate('RAG', 'Unknown');
-        current_applied = new DSAppliedCriterion(appliedTo:component, criterion:crit, value: rdv).save(failOnError:true)
+        def rdv  = RefdataCategory.lookupOrCreate('RAG', 'Unknown');
+        def user = springSecurityService.currentUser
+        current_applied = new DSAppliedCriterion(user: user, appliedTo:component, criterion:crit, value: rdv).save(failOnError:true)
       }
 
       def note = new DSNote(criterion:current_applied, note:params.comment).save(failOnError:true);
-     
+      result.newNote = note.id
       log.debug("Found applied critirion ${current_applied} for ${idparts[0]} ${idparts[1]} ${component} ${crit}");
     }
+    render result as JSON
+  }
+
+
+  @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
+  def criterionCommentDelete() {
+    log.debug('criterionCommentDelete:'+params);
+    def result    = [:]
+    result.status = 'OK'
+//    def idparts   = params.comp.split('_');
+//    log.debug(idparts);
+//    if ( idparts.length == 2 ) {
+//        def component = KBComponent.get(idparts[0]);
+//        def crit = DSCriterion.get(idparts[1]);
+//
+        def user = springSecurityService.currentUser
+//        def current_applied = DSAppliedCriterion.findByUserAndAppliedToAndCriterion(user, component, crit);
+//
+//        if (current_applied == null) {
+//            log.debug("Nothing found for DSAppliedCriterion... checking without user")
+//            log.debug(DSAppliedCriterion.findByAppliedToAndCriterion(component, crit))
+//        }
+
+        def note = DSNote.get(params.note)
+        if (note)
+        {
+            //checking note is owned by user
+             if (note.criterion.user == user)
+                 note.delete()
+            else
+                result.status = '401'
+        }
+//    }
     render result as JSON
   }
 }  
