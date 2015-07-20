@@ -29,11 +29,6 @@
             <i class="fa fa-check-circle fa-2x ${ac.value?.value=='Green'?'text-positive':''}"></i>
           </td>
           <td>
-            <ul>
-              <g:each in="${ac.notes}" var="note">
-                <li>${note.note}</li>
-              </g:each>
-            </ul>
           </td>
         </tr>
       </g:each>
