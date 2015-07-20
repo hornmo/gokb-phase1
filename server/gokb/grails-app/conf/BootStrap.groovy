@@ -152,7 +152,9 @@ class BootStrap {
     }
 
     grailsApplication.config.sysusers.each { su ->
+
       log.debug("test ${su.name} ${su.pass} ${su.display} ${su.roles}");
+
       def user = User.findByUsername(su.name)
       if ( user ) {
         if ( user.password != su.pass ) {
@@ -177,6 +179,9 @@ class BootStrap {
       log.debug("Add roles for ${su.name}");
       su.roles.each { r ->
         def role = Role.findByAuthority(r)
+        if ( role == null ) {
+          role = new Role(authority:r).save(flush:true, failOnError:true);
+        }
         if ( ! ( user.authorities.contains(role) ) ) {
           log.debug("  -> adding role ${role}");
           UserRole.create user, role

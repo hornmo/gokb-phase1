@@ -19,9 +19,9 @@
               </tr>
               <tr>
                 <td style="border-top:none;">Summary:</td>
-                <td style="border-top:none; text-align:center;"><i class="fa fa-times-circle fa-2x text-negative"></i> <br/> <span class="badge badge-warning" id="${c.component_id}_${c.criteria_id}_r"> ${c.red_votes} </span> </td>
-                <td style="border-top:none; text-align:center;"><i class="fa fa-info-circle fa-2x text-contentious"></i> <br/> <span class="badge badge-warning" id="${c.component_id}_${c.criteria_id}_a"> ${c.amber_votes} </span> </a> </td>
-                <td style="border-top:none; text-align:center;"><i class="fa fa-check-circle fa-2x text-positive"></i> <br/> <span class="badge badge-warning" id="${c.component_id}_${c.criteria_id}_g"> ${c.green_votes} </span> </a> </td>
+                <td style="border-top:none; text-align:center;"><i class="fa fa-times-circle fa-2x text-negative"></i> <br/> <span class="badge badge-warning" id="${c.component_id}_${c.criteria_id}_r"> <strong>${c.red_votes}</strong> </span> </td>
+                <td style="border-top:none; text-align:center;"><i class="fa fa-info-circle fa-2x text-contentious"></i> <br/> <span class="badge badge-warning" id="${c.component_id}_${c.criteria_id}_a"><strong> ${c.amber_votes}</strong> </span> </a> </td>
+                <td style="border-top:none; text-align:center;"><i class="fa fa-check-circle fa-2x text-positive"></i> <br/> <span class="badge badge-warning" id="${c.component_id}_${c.criteria_id}_g"><strong> ${c.green_votes}</strong> </span> </a> </td>
               </tr>
               <tr>
                 <td style="border-top:none;">Official Assessment:</td>
