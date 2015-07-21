@@ -20,7 +20,7 @@ $(document).ready(function(){
             deleteNote(elememt,note);
         }
 
-        //e.stopImmediatePropagation();
+        e.stopImmediatePropagation();
     });
 
 });
@@ -28,36 +28,40 @@ $(document).ready(function(){
 function setAppliedCriterion(target, component_id, criterion_id, v ,c) {
   $.ajax({
     url: gokb.config.baseUrl+'/ajaxSupport/appliedCriterion?comp='+component_id+'&crit='+criterion_id+'&val='+v,
-    dataType:"json",
+    dataType:"json"
   }).done(function(data) {
-    // alert(data);
-    
     if (data && "status" in data && data.status == 'OK') {
-    
-      // Remove the 
-      target.siblings().removeClass("text-neutral text-negative text-contentious text-positive");
+      // Remove the existing border colours
+      var removeClasses = "text-neutral text-negative text-contentious text-positive";
+      target.siblings().removeClass(removeClasses);
       target.addClass("text-" + c);
+      target.parents("td").next().find("span.DSAuthor").each(function (index, element) {
+          if($(element).text() === data.username)
+          {
+              var authorComment = $(element).parent().next().children("p.triangle-border");
+              console.log(authorComment);
+              authorComment.removeClass(removeClasses + " border-neutral border-negative border-contentious border-positive");
+              authorComment.addClass("border-" + c +" text-" + c);
+          }
+      });
     }
   });
 }
 
-function addNote(id) {
-
+function addNote(id, username, institution, displayname) {
   var v = $('#'+id+'_newnote').val();
-
+  if(institution == null)
+      institution = 'N/A';
   $.ajax({
     // libs and culture: 0894-8631
     url: gokb.config.baseUrl+'/ajaxSupport/criterionComment?comp='+id+'&comment='+v,
     dataType:"json"
   }).done(function(data) {
-    console.log(data);
-    //  $('#'+id+'_notestable').append("<tr><td>"+v+"</td></tr>");
-      $('#'+id+'_notestable').append("<dt> <span>Author</span> </dt><dd> <p class='DSInlineBlock'>testing long instution</p> <p class='triangle-border DSInlineBlock'> <span id='org.gokb.cred.DSNote:"+ data.newNote +":note' class='newNote xEditableValue  editable editable-pre-wrapped editable-click' data-pk='org.gokb.cred.DSNote:"+data.newNote+"' data-name='note' data-tpl='<textarea wrap=\"off\"></textarea>' data-type='textarea' data-url='/gokbLabs/ajaxSupport/editableSetValue'>"+ v +"</span> <a data-comp= "+ id +" data-note= "+ data.newNote + " class='noteDelete text-negative fa fa-times-circle fa-2x'></a></p></dd>");
+        console.log(data);
+      $('#'+id+'_notestable').append("<dt> <span class='DSAuthor' data-name="+displayname+"> "+username+"</span> </dt><dd> <p class='DSInlineBlock'>"+institution+"</p> <p class='triangle-border DSInlineBlock'> <span id='org.gokb.cred.DSNote:"+ data.newNote +":note' class='newNote xEditableValue  editable editable-pre-wrapped editable-click' data-pk='org.gokb.cred.DSNote:"+data.newNote+"' data-name='note' data-tpl='<textarea wrap=\"off\"></textarea>' data-type='textarea' data-url='/gokbLabs/ajaxSupport/editableSetValue'>"+ v +"</span> <a data-comp= "+ id +" data-note= "+ data.newNote + " class='noteDelete text-negative fa fa-times-circle fa-2x'></a></p></dd>");
       $('.newNote').editable();
       $('#'+id+'_newnote').val('');
   });
-
-
 
   return false;
 }
@@ -69,12 +73,12 @@ function deleteNote(target,note) {
     dataType:"json"
   }).done(function(data) {
     console.log(data);
-      if(data.status == 'OK')
-      {
-          var dl = target.parent().parent()
-          dl.prev().remove();
-          dl.remove()
-      }
+    if(data.status == 'OK')
+    {
+      var dl = target.parent().parent();
+      dl.prev().remove();
+      dl.remove();
+    }
   });
 
   return false;
