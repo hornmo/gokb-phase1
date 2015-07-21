@@ -23,7 +23,7 @@ class RegisterController extends grails.plugins.springsecurity.ui.RegisterContro
             return
         }
 
-        def org = Org.findByDisplayName(command.orgName)
+        def org = Org.get(command.orgName)
 
         String salt = saltSource instanceof NullSaltSource ? null : command.username
         def user = lookupUserClass().newInstance(org: org, email: command.email, username: command.username,

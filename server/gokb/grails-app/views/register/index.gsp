@@ -44,7 +44,7 @@
                 <label for="orgName">Organisation</label>
             </td>
             <td valign="top" class="value">
-                <select name="orgSelector" id="orgName" value="${command.orgName}" data-type="select">
+                <select name="orgName" id="orgName" value="${command.orgName}" data-type="select">
                     <option value="">No selection</option>
                     <g:each in="${orgs}" var="o">
                         <option value="${o[0]}">${o[1]}</option>
