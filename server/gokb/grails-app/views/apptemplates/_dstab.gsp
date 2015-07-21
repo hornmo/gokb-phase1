@@ -25,10 +25,10 @@
             <g:else>
                 <span>You have voted</span>
             </g:else>
-             <div id="currentVote">
-                 <a id="${c[2]}_${c[3]}_r_negative" href='#' ${c[1]=='Red'?'class="text-negative"':''} ><i class="fa fa-times-circle fa-2x"></i></a> &nbsp;
-                 <a id="${c[2]}_${c[3]}_a_contentious" href='#' ${c[1]=='Amber'?'class="text-contentious"':''} ><i class="fa fa-info-circle fa-2x"></i></a>&nbsp;
-                 <a id="${c[2]}_${c[3]}_g_positive" href='#' ${c[1]=='Green'?'class="text-positive"':''} ><i class="fa fa-check-circle fa-2x"></i></a>
+             <div id="currentVote${c[2]}_${c[3]}">
+                 <a id="${c[2]}_${c[3]}_r_negative" href='#' ${c[1]=='Red'?'class="text-negative selected"':''} ><i class="fa fa-times-circle fa-2x"></i></a> &nbsp;
+                 <a id="${c[2]}_${c[3]}_a_contentious" href='#' ${c[1]=='Amber'?'class="text-contentious selected"':''} ><i class="fa fa-info-circle fa-2x"></i></a>&nbsp;
+                 <a id="${c[2]}_${c[3]}_g_positive" href='#' ${c[1]=='Green'?'class="text-positive selected"':''} ><i class="fa fa-check-circle fa-2x"></i></a>
              </div>
 
 
@@ -58,14 +58,10 @@
                 <g:each in="${c[4]?.notes}" var="x">
 
                     <dt>
-                        <span class="DSAuthor">${x.criterion?.user.username}</span>
-                        <i>
-                        <g:if test="${x.lastUpdated == x.dateCreated}">
-                            <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${x.dateCreated}" /></i>
-                        </g:if>
-                        <g:else>
-                            Edited: <g:formatDate format="${session.sessionPreferences?.globalDateFormat}" date="${x.lastUpdated}" />
-                        </g:else>
+                        <span class="DSAuthor">${x.criterion?.user.username}</span>-
+                        <i class="DSTimestamp">
+                            <g:if test="${x.lastUpdated == x.dateCreated}"><g:formatDate date="${x.dateCreated}" /></g:if>
+                            <g:else>Edited: <g:formatDate date="${x.lastUpdated}" /></g:else>
                         </i>
                     </dt>
                     <dd>
