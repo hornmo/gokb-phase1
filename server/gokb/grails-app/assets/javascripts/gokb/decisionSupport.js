@@ -71,6 +71,7 @@ function voteColour(currentVote) {
 }
 
 function addNote(id, username, institution, displayname) {
+  console.log('Adding note: ',id,username,institution, displayname);
   var v   = $('#'+id+'_newnote').val();
   var i   = (institution == null || institution.length == 0) ? 'N/A' : institution;
   var currentVote = $('#currentVote'+id+' a.selected'); //current users vote, if it exists that is!

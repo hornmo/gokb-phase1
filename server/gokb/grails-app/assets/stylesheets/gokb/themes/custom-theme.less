@@ -315,7 +315,7 @@ h1.panel-title {
   width: 0;
   border-top: 10px solid transparent;
   border-bottom: 10px solid transparent;
-  border-right: 10px solid @brand-warning;
+  border-right: 10px solid ;
 }
 
 /* creates the smaller  triangle */
@@ -333,7 +333,7 @@ h1.panel-title {
 
 .triangle-border {
   background: none repeat scroll 0 0 #fff;
-  border: 5px solid @brand-warning;
+  border: 5px solid ;
   border-radius: 10px;
   color: #333;
   margin: 0 0 .5em 1em;
@@ -341,14 +341,20 @@ h1.panel-title {
   position: relative;
 }
 
-.DSInlineBlock {
-  display: inline-block;
+.DSInlineBlock { display: inline-block; }
+
+.DSAuthor { padding-right: 2em; }
+
+.DSVote {  }
+
+.DSTimestamp {
+  padding-left: 2em;
+  font-weight: 200;
 }
 
-.DSAuthor {
-
+.noteDelete {
+  padding-left: .5em;
+  text-decoration: none !important;
 }
 
-.DSVote {
-
-}
+.DSOrg {  }
