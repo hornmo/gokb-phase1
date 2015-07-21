@@ -5,8 +5,8 @@ import javax.persistence.Transient
 class DSAppliedCriterion {
 
   KBComponent appliedTo  //get decision support lines doesn't query for users
-  DSCriterion criterion
-  RefdataValue value
+  DSCriterion criterion //Pre-made formats i.e. Downloadable PDF,
+  RefdataValue value //colour Red, Green, Amber, null
   User user  //Addition so each user can have a say on decisions
 
   static hasMany = [
@@ -23,6 +23,7 @@ class DSAppliedCriterion {
     appliedTo column:'dsac_component_fk'
     criterion column:'dsac_crit_fk'
     value column:'dsac_value_fk'
+    notes sort: 'dateCreated', order: 'desc' //default ordering
   }
 
   static constraints = {
