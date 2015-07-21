@@ -34,7 +34,7 @@ function setAppliedCriterion(target, component_id, criterion_id, v ,c) {
       // Remove the existing border colours
       var removeClasses = "text-neutral text-negative text-contentious text-positive";
       target.siblings().removeClass(removeClasses);
-      target.addClass("text-" + c);
+      target.addClass("text-" + c + " selected");
       target.parents("td").next().find("span.DSAuthor").each(function (index, element) {
           if($(element).text() === data.username)
           {
@@ -48,18 +48,42 @@ function setAppliedCriterion(target, component_id, criterion_id, v ,c) {
   });
 }
 
+function voteColour(currentVote) {
+    var retval;
+    if(currentVote != 'undefined' || currentVote != null)
+    {
+        var css = currentVote.removeClass('selected').attr('class');
+        switch (css)
+        {
+            case "text-negative":
+                retval = " text-negative border-negative";
+                break;
+            case "text-positive":
+                retval = " text-positive border-positive";
+                break
+            default:
+                retval = " text-contentious border-contentious";
+                break;
+        }
+    }
+    currentVote.addClass('selected'); //add back incase further comments added
+    return retval;
+}
+
 function addNote(id, username, institution, displayname) {
-  var v = $('#'+id+'_newnote').val();
-  if(institution == null)
-      institution = 'N/A';
+  var v   = $('#'+id+'_newnote').val();
+  var i   = (institution == null || institution.length == 0) ? 'N/A' : institution;
+  var currentVote = $('#currentVote'+id+' a.selected'); //current users vote, if it exists that is!
+  var cssf = voteColour(currentVote);
+
   $.ajax({
     // libs and culture: 0894-8631
     url: gokb.config.baseUrl+'/ajaxSupport/criterionComment?comp='+id+'&comment='+v,
     dataType:"json"
   }).done(function(data) {
-        console.log(data);
-      $('#'+id+'_notestable').append("<dt> <span class='DSAuthor' data-name="+displayname+"> "+username+"</span> </dt><dd> <p class='DSInlineBlock'>"+institution+"</p> <p class='triangle-border DSInlineBlock'> <span id='org.gokb.cred.DSNote:"+ data.newNote +":note' class='newNote xEditableValue  editable editable-pre-wrapped editable-click' data-pk='org.gokb.cred.DSNote:"+data.newNote+"' data-name='note' data-tpl='<textarea wrap=\"off\"></textarea>' data-type='textarea' data-url='/gokbLabs/ajaxSupport/editableSetValue'>"+ v +"</span> <a data-comp= "+ id +" data-note= "+ data.newNote + " class='noteDelete text-negative fa fa-times-circle fa-2x'></a></p></dd>");
-      $('.newNote').editable();
+        console.log('Note: '+data);
+      $('#'+id+'_notestable').append("<dt> <span class='DSAuthor' data-name="+displayname+"> "+username+"</span> </dt><dd> <p class='DSInlineBlock'>"+i+"</p> <p class='triangle-border DSInlineBlock"+cssf+"'> <span id='org.gokb.cred.DSNote:"+ data.newNote +":note' class='newNote xEditableValue  editable editable-pre-wrapped editable-click' data-pk='org.gokb.cred.DSNote:"+data.newNote+"' data-name='note' data-tpl='<textarea wrap=\"off\"></textarea>' data-type='textarea' data-url='/gokbLabs/ajaxSupport/editableSetValue'>"+ v +"</span> <a data-comp= "+ id +" data-note= "+ data.newNote + " class='noteDelete text-negative fa fa-times-circle fa-2x'></a></p></dd>");
+      $('.newNote').editable(); //Xeditable on newly created notes
       $('#'+id+'_newnote').val('');
   });
 
