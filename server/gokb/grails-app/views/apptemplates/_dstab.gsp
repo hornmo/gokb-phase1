@@ -11,7 +11,7 @@
       <tr>
         <td colspan="1" style="vertical-align:top;"><h3>${dsl.description}</h3></td>
       </tr>
-      <g:each in="${dsl.criterion}" var="c">
+      <g:each in="${dsl.criterion}" var="id, c">
         <tr>
           <td style="vertical-align:top; white-space: nowrap;">&nbsp;&nbsp;${c[0]}</td>
             <% println(c)  %>
@@ -37,6 +37,7 @@
                     <dt>Others Voted</dt>
                     %{--<g:each in="">--}%
                         <dd>
+                            %{--title="${x.criterion?.user.displayName}"--}%
                             <p class="DSAuthor DSInlineBlock">Test</p>
                             <p class="DSVote DSInlineBlock">
                                 <span id="${c[2]}_${c[3]}_r_negative" ${c[1]=='Red'?'class="text-negative"':''} ><i class="fa fa-times-circle fa-2x"></i></span> &nbsp;

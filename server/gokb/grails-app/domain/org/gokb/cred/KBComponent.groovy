@@ -922,35 +922,111 @@ abstract class KBComponent {
     return name
   }
 
-  @Transient
-  def getDecisionSupportLines() {
-    // Return an array consisting of DS Categories, in each category the Criterion and then null or the currently selected value
-    // def criterion = DSCriterion.executeQuery('select c,c,c from DSCriterion as c');
-    // def criterion = DSCriterion.executeQuery('select c, dsac from DSCriterion as c left join c.appliedCriterion as dsac where dsac.appliedTo.id = ?',[this.id]);
-    def result = [:]
-    def criterion = null;
+//  @Transient
+//  def getDecisionSupportLinesOLD() {
+//    // Return an array consisting of DS Categories, in each category the Criterion and then null or the currently selected value
+//    // def criterion = DSCriterion.executeQuery('select c,c,c from DSCriterion as c');
+//    // def criterion = DSCriterion.executeQuery('select c, dsac from DSCriterion as c left join c.appliedCriterion as dsac where dsac.appliedTo.id = ?',[this.id]);
+//    def result = [:]
+//    def criterion = null;
+//
+//    // N.B. for steve.. saying "if id != null" always fails - id is hibernate injected - should investigate this
+//    if ( getId() != null ) {
+//      // N.B. Long standing bug in hibernate means that dsac.appliedTo = ? throws a 'can only ref props in the driving table' exception
+//      // Workaround is to use the id directly
+//        criterion = DSCriterion.executeQuery('select c, dsac from DSCriterion as c left outer join c.appliedCriterion as dsac with dsac.appliedTo.id = ?',getId());
+//        criterion.each { c ->
+//        def cat_code = c[0].owner.code
+//
+//        if ( result[cat_code] == null )
+//          result[cat_code] = [description:c[0].owner.description,criterion:[]]
+//
+//        // Add criteria title, current value if present, a string of componentId:CriteriaId (For setter/getter)
+//        result[cat_code].criterion.add([c[0].title,
+//                                        c[1]?.value?.value,
+//                                        getId(),
+//                                        c[0].id,
+//                                        c[1]])
+//          log.debug("Present Notes: "+c[1]?.notes)
+//      }
+//    }
+//    else {
+//    }
+//    return result
+//  }
 
-    // N.B. for steve.. saying "if id != null" always fails - id is hibernate injected - should investigate this
-    if ( getId() != null ) {
-      // N.B. Long standing bug in hibernate means that dsac.appliedTo = ? throws a 'can only ref props in the driving table' exception
-      // Workaround is to use the id directly
-      criterion = DSCriterion.executeQuery('select c, dsac from DSCriterion as c left outer join c.appliedCriterion as dsac with dsac.appliedTo.id = ?',getId());
-      criterion.each { c ->
-        def cat_code = c[0].owner.code
+    @Transient
+    def getDecisionSupportLines() {
+        // Return an array consisting of DS Categories, in each category the Criterion and then null or the currently selected value
+        // def criterion = DSCriterion.executeQuery('select c,c,c from DSCriterion as c');
+        // def criterion = DSCriterion.executeQuery('select c, dsac from DSCriterion as c left join c.appliedCriterion as dsac where dsac.appliedTo.id = ?',[this.id]);
+        def result = [:]
+        def criterion = null;
 
-        if ( result[cat_code] == null ) 
-          result[cat_code] = [description:c[0].owner.description,criterion:[]]
+        // N.B. for steve.. saying "if id != null" always fails - id is hibernate injected - should investigate this
+        if ( getId() != null ) {
+            // N.B. Long standing bug in hibernate means that dsac.appliedTo = ? throws a 'can only ref props in the driving table' exception
+            // Workaround is to use the id directly
+            criterion = DSCriterion.executeQuery('select c, dsac from DSCriterion as c left outer join c.appliedCriterion as dsac with dsac.appliedTo.id = ?',getId());
 
-        // Add criteria title, current value if present, a string of componentId:CriteriaId (For setter/getter)
-        result[cat_code].criterion.add([c[0].title, 
-                                        c[1]?.value?.value, 
-                                        getId(),
-                                        c[0].id,
-                                        c[1]])
-      }
+            criterion.each { c ->
+                log.debug("Entry contains: "+c)
+                def cat_code = c[0].owner.code
+
+                if ( result[cat_code] == null )
+                    result[cat_code] = [description:c[0].owner.description, criterion: [:]] //criterion now a map
+
+                // Add criteria title, current value if present, a string of componentId:CriteriaId (For setter/getter)
+                if (!result[cat_code].criterion[c[0].id]) {
+                    // Set all params.
+                    //use criterion key instead for id
+                    result[cat_code].criterion[c[0].id] = [
+                            "title" : c[0].title,
+                            "appliedTo" : getId(), //component
+                            "yourVote" : [],
+                            "otherVotes" : [],
+                            "masterVote" : [],
+                            "notes" : []
+                    ]
+                }
+
+                //Your votes placeholder
+                if (springSecurityService.currentUser == c[1]?.user) {
+                    // Current users vote.
+                    result[cat_code].criterion[c[0].id]['yourVote'] = [
+                            c[1]?.value?.value, //colour
+                            c[1],               //dsac
+                            c[1].user           //user
+                    ]
+                } //master vote
+                else if (c[1]?.user?.username == "jisc") //
+                {
+                    result[cat_code].criterion[c[0].id]['masterVote'] = [
+                            c[1]?.value?.value,
+                            c[1],
+                            c[1].user
+                    ]
+                }
+                else {
+                    // Just add the vote to others.
+                    result[cat_code].criterion[c[0].id]['otherVotes'] << [
+                            c[1]?.value?.value,
+                            c[1],
+                            c[1]?.user
+                    ]
+                }
+
+                //Add the collection of notes
+                if (c[1]?.notes) {
+                    println("Current notes to add: "+c[1].notes)
+                    result[cat_code].criterion[c[0].id]['notes'].addAll(c[1].notes)
+                }
+
+                println("Current iteration of criterion "+c[0].id + "\t" +result[cat_code].criterion[c[0].id])
+            }
+        }
+        else {
+        }
+        return result
     }
-    else {
-    }
-    return result
-  }
 }
