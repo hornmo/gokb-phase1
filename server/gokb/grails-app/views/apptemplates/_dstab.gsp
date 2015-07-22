@@ -1,4 +1,3 @@
-<g:set var="current" value="${session.getAt('SPRING_SECURITY_CONTEXT').getAt('authentication').getAt('credentials')}" scope="page" />
 <table id="tab-decision-suppport" class="table table-bordered">
   <thead>
     <tr>
@@ -15,7 +14,7 @@
       <g:each in="${dsl.criterion}" var="c">
         <tr>
           <td style="vertical-align:top; white-space: nowrap;">&nbsp;&nbsp;${c[0]}</td>
-            <% println(c+"\n\n")  %>
+            <% println(c)  %>
           <td class="vote" style="white-space: nowrap;">
             <g:if test="${(c[1]=='Unknown'||c[1]==null)}">
                 <i id="${c[2]}_${c[3]}_q_neutral" class="text-neutral">
@@ -25,13 +24,11 @@
             <g:else>
                 <span>You have voted</span>
             </g:else>
-             <div id="currentVote${c[2]}_${c[3]}">
+             <div class="DSVote" id="currentVote${c[2]}_${c[3]}">
                  <a id="${c[2]}_${c[3]}_r_negative" href='#' ${c[1]=='Red'?'class="text-negative selected"':''} ><i class="fa fa-times-circle fa-2x"></i></a> &nbsp;
                  <a id="${c[2]}_${c[3]}_a_contentious" href='#' ${c[1]=='Amber'?'class="text-contentious selected"':''} ><i class="fa fa-info-circle fa-2x"></i></a>&nbsp;
                  <a id="${c[2]}_${c[3]}_g_positive" href='#' ${c[1]=='Green'?'class="text-positive selected"':''} ><i class="fa fa-check-circle fa-2x"></i></a>
              </div>
-
-
 
             %{--Others have voted already--}%
             <g:if test="${true}" >
@@ -59,6 +56,7 @@
 
                     <dt>
                         <span class="DSAuthor">${x.criterion?.user.username}</span>-
+                        <g:if test="${c[4]?.value?.value == 'Unknown'}">-(NOT VOTED)--</g:if>
                         <i class="DSTimestamp">
                             <g:if test="${x.lastUpdated == x.dateCreated}"><g:formatDate date="${x.dateCreated}" /></g:if>
                             <g:else>Edited: <g:formatDate date="${x.lastUpdated}" /></g:else>
@@ -82,7 +80,9 @@
                         <g:elseif test="${c[4]?.value?.value == 'Green'}">
                             <p class="triangle-border DSInlineBlock text-positive border-positive">
                         </g:elseif>
-
+                        <g:elseif test="${c[4]?.value?.value == 'Unknown'}">
+                            <p class="triangle-border DSInlineBlock text-contentious border-contentious">
+                        </g:elseif>
                             <g:if test="${x.criterion.user.username == user.username}" >
                                 <g:xEditable owner="${x}" field="note"/>
                                 <a data-comp="${c[2]}_${c[3]}" data-note="${x.id}" class="noteDelete text-negative fa fa-times-circle fa-2x"></a>
