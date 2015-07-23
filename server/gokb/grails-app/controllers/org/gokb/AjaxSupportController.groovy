@@ -568,6 +568,7 @@ class AjaxSupportController {
 
       def note = new DSNote(criterion:current_applied, note:params.comment).save(failOnError:true);
       result.newNote  = note.id
+      result.created  = note.dateCreated
       log.debug("Found applied critirion ${current_applied} for ${idparts[0]} ${idparts[1]} ${component} ${crit}");
     }
     render result as JSON

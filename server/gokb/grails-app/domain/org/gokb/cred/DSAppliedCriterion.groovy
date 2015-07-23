@@ -4,8 +4,8 @@ import javax.persistence.Transient
 
 class DSAppliedCriterion {
 
-  KBComponent appliedTo  //get decision support lines doesn't query for users
-  DSCriterion criterion //Pre-made formats i.e. Downloadable PDF,
+  KBComponent appliedTo  //get decision support lines doesn't query for users i.e. component
+  DSCriterion criterion //Pre-made formats i.e. Downloadable PDF, i.e. crit
   RefdataValue value //colour Red, Green, Amber, null
   User user  //Addition so each user can have a say on decisions
 

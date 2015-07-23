@@ -951,7 +951,8 @@ abstract class KBComponent {
                             "yourVote" : [],
                             "otherVotes" : [],
                             "masterVote" : [],
-                            "notes" : []
+                            "notes" : [],
+                            "voteCounter" : [0,0,0,0] //Red,Amber,Green,Unknown
                     ]
                 }
 
@@ -987,6 +988,23 @@ abstract class KBComponent {
                 if (c[1]?.notes)
                     result[cat_code].criterion[c[0].id]['notes'].addAll(c[1].notes)
 
+                if (c[1] != null) {
+                    switch (c[1]?.value?.value)
+                    {
+                        case 'Red':
+                            result[cat_code].criterion[c[0].id]['voteCounter'][0] ++;
+                            break
+                        case 'Amber':
+                            result[cat_code].criterion[c[0].id]['voteCounter'][1] ++;
+                            break
+                        case 'Green':
+                            result[cat_code].criterion[c[0].id]['voteCounter'][2] ++;
+                            break
+                        default:
+                            result[cat_code].criterion[c[0].id]['voteCounter'][3] ++;
+                            break
+                    }
+                }
             }
             //todo Change to sort once only via qry, let the DB do the hard work. Need to group all notes from criterion & appliedTo!
             criterion.each { c ->
