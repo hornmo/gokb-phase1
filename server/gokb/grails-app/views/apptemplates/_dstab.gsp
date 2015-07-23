@@ -22,7 +22,7 @@
           <td class="vote" style="white-space: nowrap; width: 25%;">
             <g:if test="${(c[1]=='Unknown'||c[1]==null)}">
                 <i id="${c['appliedTo']}_${id}_q_neutral" class="text-neutral">
-                    <span class="fa fa-question-circle fa-2x"></span><span>cast your vote</span>
+                    <span class="fa fa-question-circle fa-2x"></span><span>cast your vote</span></br>
                 </i></br>
             </g:if>
             <g:else>
@@ -33,32 +33,43 @@
                  <a id="${c['appliedTo']}_${id}_a_contentious" href='#' ${c[1]=='Amber'?'class="text-contentious selected"':''} ><i class="fa fa-info-circle fa-2x"></i></a>&nbsp;
                  <a id="${c['appliedTo']}_${id}_g_positive" href='#' ${c[1]=='Green'?'class="text-positive selected"':''} ><i class="fa fa-check-circle fa-2x"></i></a>
              </div>
-
-            %{--Others have voted already--}%
-            <g:if test="${true}" >
-                </br></br>
-                <dl id="otherVoters" style="margin: 0; padding: 0">
-                    <dt>Others Voted</dt>
-                    %{--<g:each in="">--}%
-                        <dd>
-                            %{--title="${x.criterion?.user.displayName}"--}%
-                            <p class="DSAuthor DSInlineBlock">Test</p>
-                            <p class="DSVote DSInlineBlock">
-                                <span id="${c['appliedTo']}_${id}_r_negative" ${c[1]=='Red'?'class="text-negative"':''} ><i class="fa fa-times-circle fa-2x"></i></span> &nbsp;
-                                <span id="${c['appliedTo']}_${id}_a_contentious"  ${c[1]=='Amber'?'class="text-contentious"':''} ><i class="fa fa-info-circle fa-2x"></i></span>&nbsp;
-                                <span id="${c['appliedTo']}_${id}_g_positive" ${c[1]=='Green'?'class="text-positive"':''} ><i class="fa fa-check-circle fa-2x"></i></span>
-                            </p>
-                        </dd>
-                    %{--</g:each>--}%
-                </dl>
+            </br></br>
+            <g:if test="${c['otherVotes'].isEmpty()}">
+                No one else has voted yet
             </g:if>
-
-          </td>
+            <g:else>
+            <table id="otherVoters" style="margin: 0; padding: 0">
+                <thead>
+                     <tr>
+                         <th>Others Voted</th>
+                     </tr>
+                 </thead>
+                <tbody>
+            <g:each in="${c['otherVotes']}" var="o">
+                <tr>
+                        <td>
+                            <p class="DSAuthor DSInlineBlock" title="${o[2].org.name}">
+                                ${o[2]?.displayName}
+                            </p>
+                        </td>
+                        <td>
+                            <p class="DSVote DSInlineBlock">
+                                <span id="${c['appliedTo']}_${id}_r_negative" ${o[0]=='Red'?'class="text-negative"':''} ><i class="fa fa-times-circle fa-2x"></i></span> &nbsp;
+                                <span id="${c['appliedTo']}_${id}_a_contentious"  ${o[0]=='Amber'?'class="text-contentious"':''} ><i class="fa fa-info-circle fa-2x"></i></span>&nbsp;
+                                <span id="${c['appliedTo']}_${id}_g_positive" ${o[0]=='Green'?'class="text-positive"':''} ><i class="fa fa-check-circle fa-2x"></i></span>
+                                <g:if test="${o[0]=='Unknown'}"><i>(Commented only)</i></g:if>
+                            </p>
+                        </td>
+                </tr>
+            </g:each>
+                </tbody>
+           </table>
+            </g:else>
+        </td>
           <td style="vertical-align:top; width:60%;">
 
             <dl id="${c['appliedTo']}_${id}_notestable">
                 <g:each in="${c['notes']}" var="note">
-                    <% println("</br> " + note + "</br>") %>
                     <dt>
                         <span class="DSAuthor">${note?.criterion?.user.username}</span>-
                         <g:if test="${note?.criterion?.value?.value == 'Unknown'}">-(NOT VOTED)--</g:if>
