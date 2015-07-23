@@ -14,19 +14,23 @@
         <g:each in="${dsl.criterion}" var="id, c">
             <tr>
                 <td style="vertical-align:top; white-space: nowrap; width: 15%;">&nbsp;&nbsp;${c['title']} </td>
-                <% println("\n\n\nID :" )  %>
-                <% println(id)  %>
-                <% println("</br>")  %>
-                <% println(c)  %>
-                <% println("</br></br>")  %>
                 <td class="vote" style="white-space: nowrap; width: 25%;">
+                    <g:if test="${!c['masterVote'].isEmpty()}">
+                        <div id="masterVote" title="" class="DSVote DSMasterVote">
+                            <b>Master Vote</b></br>
+                            <span class="DSAuthor">JISC</span>
+                            <span id="${c['appliedTo']}_${id}_master" ${c['masterVote'][0]=='Green'?'class="text-positive"': (c['masterVote'][0]=='Red' ? 'class="text-negative"' : 'class="text-contentious"')} ><i class="fa fa-times-circle fa-2x"></i></span> &nbsp;
+                            </br></br></br>
+                        </div>
+                    </g:if>
+
                     <g:if test="${c['yourVote'].isEmpty()}">
                         <i id="${c['appliedTo']}_${id}_q_neutral" class="text-neutral">
                             <span class="fa fa-question-circle fa-2x"></span><span>&nbsp;&nbsp;cast your vote</span></i></br>
                         </br>
                     </g:if>
                     <g:else>
-                        <span>You have voted</span>
+                        <span><b>You have voted</b></span>
                     </g:else>
                     <div class="DSVote" id="currentVote${c['appliedTo']}_${id}">
                         <a id="${c['appliedTo']}_${id}_r_negative" title="${c['voteCounter'][0] +  (c['voteCounter'][3]>0? ' Red vote(s) and ' + c['voteCounter'][3] + ' commented only':' Red vote(s)') }" href='#' ${c['yourVote'][0]=='Red'?'class="text-negative selected"':''} ><i class="fa fa-times-circle fa-2x"></i></a> &nbsp;
@@ -48,7 +52,7 @@
                             <g:each in="${c['otherVotes']}" var="o">
                                 <tr>
                                     <td>
-                                        <p class="DSAuthor DSInlineBlock" title="${o[2].org.name}">
+                                        <p class="DSAuthor DSInlineBlock" title="${o[2]?.org?.name}">
                                             ${o[2]?.displayName}
                                         </p>
                                     </td>
