@@ -1513,7 +1513,7 @@ waiting {
 
 cache.headers.presets = [
   "none": false,
-  "until_changed": [shared:true, validFor: 3600]
+  "until_changed": [shared:true, validFor: (3600 * 12)] // cache content for 12 hours.
 ]
 
 // cors.headers = ['Access-Control-Allow-Origin': '*']
