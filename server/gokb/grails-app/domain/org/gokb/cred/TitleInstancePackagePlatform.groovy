@@ -23,6 +23,8 @@ class TitleInstancePackagePlatform extends KBComponent {
   String url
   Date accessStartDate
   Date accessEndDate
+  // The date on which we last encountered an assertion of this title/package/platform
+  Date lastSeen
   String notes
 
   private static refdataDefaults = [
@@ -33,7 +35,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     "paymentType"   : "Paid",
     "coverageDepth" : "Fulltext"
   ]
-  
+
   static touchOnUpdate = [
     "pkg"
   ]
@@ -63,7 +65,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   public getPersistentId() {
     "gokb:TIPP:${title?.id}:${pkg?.id}"
   }
-  
+
   public static isTypeCreatable(boolean defaultValue = false) {
     return defaultValue;
   }
@@ -87,7 +89,8 @@ class TitleInstancePackagePlatform extends KBComponent {
     paymentType column:'tipp_payment_type'
     accessStartDate column: 'tipp_access_start_date'
     accessEndDate column: 'tipp_access_end_date'
-	notes column:'ebook_tipp_notes'
+	  notes column:'ebook_tipp_notes'
+    lastSeen column:'tipp_last_seen'
   }
 
   static constraints = {
@@ -109,6 +112,7 @@ class TitleInstancePackagePlatform extends KBComponent {
     paymentType (nullable:true, blank:true)
     accessStartDate (nullable:true, blank:false)
     accessEndDate (nullable:true, blank:false)
+    lastSeen(nullable:true,blank:false)
   }
 
   @Transient
@@ -126,10 +130,10 @@ class TitleInstancePackagePlatform extends KBComponent {
    */
   public static tiplAwareCreate(tipp_fields = [:]) {
     def result = new TitleInstancePackagePlatform(tipp_fields)
-    
+
     // See if there is a TIPL
     TitleInstancePlatform.withNewTransaction { t ->
-    
+
       TitleInstancePlatform.ensure(tipp_fields.title, tipp_fields.hostPlatform, tipp_fields.url);
     }
     result

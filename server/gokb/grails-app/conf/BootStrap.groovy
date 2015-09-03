@@ -773,15 +773,19 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('SPR', 'Illustrator').save()
     RefdataCategory.lookupOrCreate('SPR', 'Editor').save()
 	
-	RefdataCategory.lookupOrCreate('Subject.Classification', 'Dewey').save()
-	RefdataCategory.lookupOrCreate('Subject.Classification', 'LCCN').save()
-	RefdataCategory.lookupOrCreate('Subject.Classification', 'Assigned by Provider').save()
-	RefdataCategory.lookupOrCreate('Subject.Classification', 'BISAC').save()
-	RefdataCategory.lookupOrCreate('Subject.Classification', 'MESH').save()
-	RefdataCategory.lookupOrCreate('Subject.Classification', 'LCSH').save()
+    RefdataCategory.lookupOrCreate('Subject.Classification', 'Dewey').save()
+    RefdataCategory.lookupOrCreate('Subject.Classification', 'LCCN').save()
+    RefdataCategory.lookupOrCreate('Subject.Classification', 'Assigned by Provider').save()
+    RefdataCategory.lookupOrCreate('Subject.Classification', 'BISAC').save()
+    RefdataCategory.lookupOrCreate('Subject.Classification', 'MESH').save()
+    RefdataCategory.lookupOrCreate('Subject.Classification', 'LCSH').save()
 		
-	RefdataCategory.lookupOrCreate('ebook.filetype','kbart2').save()
-	RefdataCategory.lookupOrCreate('ebook.filetype','ingram').save()
-	RefdataCategory.lookupOrCreate('ebook.filetype','ybp').save()
+    RefdataCategory.lookupOrCreate('ebook.filetype','kbart2').save()
+    RefdataCategory.lookupOrCreate('ebook.filetype','ingram').save()
+    RefdataCategory.lookupOrCreate('ebook.filetype','ybp').save()
+
+    def ybp_source = Source.findByName('YBP') ?: new Source(name:'YBP').save(flush:true, failOnError:true);
+    def cup_source = Source.findByName('CUP') ?: new Source(name:'CUP').save(flush:true, failOnError:true);
+    def wiley_source = Source.findByName('WILEY') ?: new Source(name:'WILEY').save(flush:true, failOnError:true);
   }
 }
