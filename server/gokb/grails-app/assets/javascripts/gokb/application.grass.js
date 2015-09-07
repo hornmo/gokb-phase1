@@ -142,6 +142,7 @@ window.gokb = {
     
     /** Editable **/
     $.fn.editable.defaults.mode = 'inline';
+    $.fn.editable.defaults.onblur = 'ignore';
     
     $('.xEditableValue').editable();
     $(".xEditableManyToOne").editable();

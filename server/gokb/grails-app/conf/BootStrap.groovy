@@ -176,13 +176,16 @@ class BootStrap {
 
       log.debug("Add roles for ${su.name}");
       su.roles.each { r ->
+        log.debug("adding role ${r}");
         def role = Role.findByAuthority(r)
-        if ( ! ( user.authorities.contains(role) ) ) {
-          log.debug("  -> adding role ${role}");
-          UserRole.create user, role
-        }
-        else {
-          log.debug("  -> ${role} already present");
+        if ( role ) {
+          if ( ! ( user.authorities.contains(role) ) ) {
+            log.debug("  -> adding role ${role}");
+            UserRole.create user, role
+          }
+          else {
+            log.debug("  -> ${role} already present");
+          }
         }
       }
     }
