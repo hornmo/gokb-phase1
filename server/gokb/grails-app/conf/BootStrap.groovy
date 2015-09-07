@@ -62,6 +62,11 @@ class BootStrap {
     def suRole = Role.findByAuthority('ROLE_SUPERUSER') ?: new Role(authority: 'ROLE_SUPERUSER', roleType:'global').save(failOnError: true)
     def refineUserRole = Role.findByAuthority('ROLE_REFINEUSER') ?: new Role(authority: 'ROLE_REFINEUSER', roleType:'global').save(failOnError: true)
 
+
+
+    assertInstitution('Jisc Collections');
+    assertInstitution('The Northern Collective');
+
     [ 
       'accessdl':'Access - Download', 
       'accessol':'Access - Read Online',
@@ -325,6 +330,16 @@ class BootStrap {
       p.save(flush:true);
     }
 
+  }
+
+  def assertInstitution(name) {
+    def p = Org.findByName(name)
+    if ( !p ) {
+      def institution_role = RefdataCategory.lookupOrCreate('Org Role','Institution');
+      p = new Org(name:name)
+      p.tags.add(institution_role);
+      p.save(flush:true);
+    }
   }
 
   def addValidationRules() {
