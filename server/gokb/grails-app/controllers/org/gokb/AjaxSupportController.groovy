@@ -566,7 +566,7 @@ class AjaxSupportController {
         current_applied = new DSAppliedCriterion(user: user, appliedTo:component, criterion:crit, value: rdv).save(failOnError:true)
       }
 
-      def note = new DSNote(criterion:current_applied, note:params.comment).save(failOnError:true);
+      def note = new DSNote(criterion:current_applied, note:params.comment, isDeleted:false).save(failOnError:true);
       result.newNote  = note.id
       result.created  = note.dateCreated
       log.debug("Found applied critirion ${current_applied} for ${idparts[0]} ${idparts[1]} ${component} ${crit}");
@@ -586,7 +586,7 @@ class AjaxSupportController {
     {
         //checking note is owned by user
          if (note.criterion.user == user)
-             note.delete()
+             note.isDeleted=true
         else
             result.status = '401'
     }
