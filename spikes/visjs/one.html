@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Network | Interaction events</title>
+
+    <script type="text/javascript" src="http://visjs.org/dist/vis.js"></script>
+    <link href="http://visjs.org/dist/vis.css" rel="stylesheet" type="text/css"/>
+
+    <style type="text/css">
+        #mynetwork {
+            width: 600px;
+            height: 400px;
+            border: 1px solid lightgray;
+        }
+    </style>
+  </head>
+  <body>
+
+    <div id="mynetwork"></div>
+    <pre id="eventSpan"></pre>
+
+    <script type="text/javascript">
+
+      var options = {
+        interaction:{hover:true},
+        nodes : {
+          shape:'dot',
+          size:10
+        },
+        layout: {
+          hierarchical: {
+            direction: 'LR'
+          }
+        }
+      };
+
+      // create an array with nodes
+
+      var nodes = new vis.DataSet([
+        {id: 1, label: '\n\n01/01/2012\nBrain of the Firm\nWiley', title: 'I have a popup!'},
+        {id: 2, label: 'Node 2', title: 'I have a popup!'},
+        {id: 3, label: 'Node 3', title: 'I have a popup!'},
+        {id: 4, label: 'Node 4', title: 'I have a popup!'},
+        {id: 5, label: 'Node 5', title: 'I have a popup!'}
+      ]);
+
+      // create an array with edges
+      var edges = new vis.DataSet([
+        {from: 1, to: 3, label:'One', arrows:'to'},
+        {from: 1, to: 2, label:'two'},
+        {from: 2, to: 4, label:'three'},
+        {from: 2, to: 5, label:'four'}
+      ]);
+
+      // create a network
+      var container = document.getElementById('mynetwork');
+      var data = {
+        nodes: nodes,
+        edges: edges
+      };
+      var network = new vis.Network(container, data, options);
+    </script>
+
+  </body>
+</html>
+

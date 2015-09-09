@@ -7,11 +7,12 @@
     </tr>
     </thead>
     <tbody>
-    <g:each in="${d.decisionSupportLines.values()}" var="dsl">
+      <g:each in="${d.decisionSupportLines.values()}" var="dsl">
         <tr>
-            <td colspan="3" style="vertical-align:top;"><h3>${dsl.description}</h3></td>
+            <td colspan="3" style="vertical-align:top;">
+              <h3>${dsl.description}</h3></td>
         </tr>
-        <g:each in="${dsl.criterion}" var="id, c">
+          <g:each in="${dsl.criterion}" var="id, c">
             <tr>
                 <td style="vertical-align:top; white-space: nowrap; width: 15%;">&nbsp;&nbsp;${c['title']} </td>
                 <td class="vote" style="white-space: nowrap; width: 25%;">
@@ -131,6 +132,7 @@
                 </td>
             </tr>
         </g:each>
-    </g:each>
+      </g:each>
+
     </tbody>
 </table>
