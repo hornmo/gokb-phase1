@@ -1471,3 +1471,5 @@ waiting {
  }
  }
  remove this line */
+
+feature.otherVoters=false
