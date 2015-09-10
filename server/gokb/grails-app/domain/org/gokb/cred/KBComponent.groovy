@@ -949,9 +949,6 @@ abstract class KBComponent {
             Closure dates = { a, b -> a.lastUpdated <= b.lastUpdated? 1 : -1 }
             criterionMap.each { c, acrit ->
 
-                println(c)
-                println(acrit)
-
                 def cat_code = c.owner.code //e.g. Fromat,Access - Read Online, etc.
 
                 if (result[cat_code] == null)
@@ -966,7 +963,6 @@ abstract class KBComponent {
                             "appliedTo"    : getId(),   //Package extends KBComponent
                             "yourVote"     : [],        //logged in users vote
                             "otherVotes"   : [],        //Every else minus logged in & master vote
-                            "masterVote"   : [],        //Master vote JISC organisation
                             "voteCounter"  : [0,0,0,0], //Red,Amber,Green,Unknown
                             "notes"        : [],         //Comments organised
                             "deletedNotes" : []         //Comments organised
@@ -987,23 +983,14 @@ abstract class KBComponent {
                                 ac,               //dsac
                                 ac.user           //user
                         ]
-                    } //master vote
-                    else if (ac?.user?.username == "jisc") //
-                    {
-                        result[cat_code].criterion[c.id]['masterVote'] = [
+                    }
+                    else {
+                        //Has there been any other vote
+                        result[cat_code].criterion[c.id]['otherVotes'] << [
                                 ac?.value?.value,
                                 ac,
-                                ac.user
+                                ac?.user
                         ]
-                    } else {
-                        //Has there been any other vote
-                        if (ac != null) {
-                            result[cat_code].criterion[c.id]['otherVotes'] << [
-                                    ac?.value?.value,
-                                    ac,
-                                    ac?.user
-                            ]
-                        }
                     }
 
                     //DSAppliedCriterion level, not possible to check if deleted unless loop through each individual note

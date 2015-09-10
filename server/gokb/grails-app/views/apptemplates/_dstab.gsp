@@ -18,19 +18,9 @@
                     <div class="criterionTitle">&nbsp;&nbsp;${c['title']}</div></br>
 
                     <div class="vote" style="white-space: nowrap;">
-                        <g:if test="${!c['masterVote'].isEmpty()}">
-                            <div id="masterVote" title="" class="DSVote DSMasterVote">
-                                <b>Master Vote</b></br>
-                                <span class="DSAuthor">JISC</span>
-                                <span id="${c['appliedTo']}_${id}_master" ${c['masterVote'][0]=='Green'?'class="text-positive"': (c['masterVote'][0]=='Red' ? 'class="text-negative"' : 'class="text-contentious"')} ><i class="fa fa-times-circle fa-2x"></i></span> &nbsp;
-                                        </br></br></br>
-                                    </div>
-                        </g:if>
-
                         <g:if test="${c['yourVote'].isEmpty()}">
                             <i id="${c['appliedTo']}_${id}_q_neutral" class="text-neutral">
-                                <span class="fa fa-question-circle fa-2x"></span><span>&nbsp;&nbsp;cast your vote</span></i></br>
-                                    </br>
+                             <span class="fa fa-question-circle fa-2x"></span><span>&nbsp;&nbsp;cast your vote</span></i></br></br>
                         </g:if>
                         <g:else>
                             <span><b>You have voted</b></span>
@@ -146,6 +136,47 @@
                             </dd>
                         </g:each>
                     </dl>
+
+
+                    <div id="${c['appliedTo']}_${id}_accordion" role="tablist" aria-multiselectable="true">
+                        <div class="">
+                            <div class="panel-heading" role="tab" id="headingOne">
+                                <h4 class="panel-title">
+                                    <a role="button" data-toggle="collapse" data-parent="#${c['appliedTo']}_${id}_accordion" href="#${c['appliedTo']}_${id}_collapse" aria-expanded="true" aria-controls="${c['appliedTo']}_${id}_collapse">
+                                        Show/Hide deleted...
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="${c['appliedTo']}_${id}_collapse" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingOne">
+                                <div class="panel-body">
+                                    <span>
+                                        <g:if test="${c['deletedNotes'].size() > 0}">Number of deleted notes: ${c['deletedNotes'].size()}</g:if>
+                                        <g:else>No deleted notes to show...</g:else>
+                                    </span>
+                                    <dl id="${c['appliedTo']}_${id}_deleted" style="padding: 0px;">
+                                        <g:each in="${c['deletedNotes']}" var="note">
+                                            <dt>
+                                                <span class="DSAuthor">${note?.criterion?.user.username}</span>-
+                                            <g:if test="${note?.criterion?.value?.value == 'Unknown'}">-(NOT VOTED)--</g:if>
+                                                <i class="DSTimestamp">
+                                                    <g:if test="${note.lastUpdated == note.dateCreated}"><g:formatDate date="${note.dateCreated}" /></g:if>
+                                                    <g:else>Edited: <g:formatDate date="${note.lastUpdated}" /></g:else>
+                                                </i>
+                                            </dt>
+                                            <dd>
+                                                <p class="DSInlineBlock DSOrg">
+                                                    <g:if test="${note.criterion?.user?.org?.name == null}">N/A</g:if>
+                                                    <g:else>${note.criterion?.user?.org?.name}</g:else>
+                                                </p>
+                                                <p class="triangle-border DSInlineBlock text-deleted border-deleted">${note.note}</p>
+                                            </dd>
+                                        </g:each>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
 
                     <form role="form" class="form" onsubmit='return addNote("${c['appliedTo']}_${id}", "${user.username}", "${user?.org?.name}")'>
                         <div class="form-group">
