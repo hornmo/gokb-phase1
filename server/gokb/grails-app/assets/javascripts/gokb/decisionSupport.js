@@ -12,7 +12,7 @@ $(document).ready(function(){
     return false;
   });
 
-    $('.noteDelete').click(function (e) {
+    $(document).on('click','.noteDelete',function (e) {
         var agreed = confirm("Are you sure you wish to delete?");
         if (agreed == true) {
             var elememt = $(this);
@@ -106,9 +106,30 @@ function deleteNote(target,note) {
   }).done(function(data) {
     if(data.status == 'OK')
     {
-      var dl = target.parent().parent();
-      dl.prev().remove();
-      dl.remove();
+        //Remove previous RED, AMBER, GREEN CSS classes and replace with GREY deleted
+        var removeClasses  = 'text-neutral text-negative text-contentious text-positive border-neutral border-negative border-contentious border-positive xEditableValue editable editable-pre-wrapped editable-click';
+        var deletedClasses = 'text-deleted border-deleted'
+        var editClasses    = 'xEditableValue editable editable-pre-wrapped editable-click'
+        var message        = 'Number of deleted notes: ';
+
+        //remove/add CSS, remove delete functionality
+        var paraTag        = target.parent("p");
+        var cid            = target.data('comp');
+        paraTag.removeClass(removeClasses);
+        paraTag.addClass(deletedClasses);
+        target.prev().removeClass(editClasses).unbind('click'); //unbind delete behaviour
+
+        //Message append
+        var deletedList = $('#'+cid+'_deleted');
+        var rowCount = deletedList.children('dt').length;
+        deletedList.prev().text(message + rowCount);
+
+        //move from active list to deleted
+        var dd = target.parent().parent();
+        var dt = dd.prev("dt").detach();
+        dd = dd.detach();
+        deletedList.prepend(dt,dd); //add to top of DL
+        target.remove(); //delete button
     }
   });
 
