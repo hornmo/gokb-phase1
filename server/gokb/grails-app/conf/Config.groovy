@@ -467,18 +467,6 @@ validation.rules = [
     ]
   ],
 
-  "${IngestService.PRIMARY_TIPP}" : [
-    [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
-    [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
-    [
-      type: IsOneOfRefdata,
-      severity: A_ValidationRule.SEVERITY_ERROR,
-      args: [
-        "TitleInstancePackagePlatform.Primary"
-      ]
-    ]
-  ],
-
   "${IngestService.TIPP_PAYMENT}" : [
     [ type: ColumnMissing      , severity: A_ValidationRule.SEVERITY_WARNING ],
     [ type: ColumnUnique      , severity: A_ValidationRule.SEVERITY_ERROR ],
