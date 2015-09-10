@@ -578,15 +578,14 @@ class AjaxSupportController {
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def criterionCommentDelete() {
     log.debug('criterionCommentDelete:'+params);
-    def result    = [:]
-    result.status = 'OK'
-    def user = springSecurityService.currentUser
-    def note = DSNote.get(params.note)
+    def result       = [:]
+    result.status    = 'OK'
+    def user         = springSecurityService.currentUser
+    def note         = DSNote.get(params.note)
     if (note)
     {
-        //checking note is owned by user
-         if (note.criterion.user == user)
-             note.isDeleted=true
+        if (note.criterion.user == user)
+            note.isDeleted       = true
         else
             result.status = '401'
     }

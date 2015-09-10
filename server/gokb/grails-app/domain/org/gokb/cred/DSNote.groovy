@@ -14,7 +14,7 @@ class DSNote {
     id column:'dsn_id'
     criterion column:'dsn_crit_fk'
     note column:'dsn_note_txt', type:'text'
-    sort dateCreated: "desc"
+    sort lastUpdated: "desc"
     isDeleted column:'dsn_isDeleted'
   }
 
