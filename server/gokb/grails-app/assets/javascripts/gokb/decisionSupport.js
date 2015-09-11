@@ -121,7 +121,7 @@ function deleteNote(target,note) {
 
         //Message append
         var deletedList = $('#'+cid+'_deleted');
-        var rowCount = deletedList.children('dt').length;
+        var rowCount = deletedList.children('dt').length + 1;
         deletedList.prev().text(message + rowCount);
 
         //move from active list to deleted

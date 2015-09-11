@@ -2,7 +2,6 @@
     <thead>
     <tr>
         <th>Criterion</th>
-        <th>Value</th>
         <th>Notes</th>
     </tr>
     </thead>
@@ -22,6 +21,9 @@
                             <i id="${c['appliedTo']}_${id}_q_neutral" class="text-neutral">
                              <span class="fa fa-question-circle fa-2x"></span><span>&nbsp;&nbsp;cast your vote</span></i></br></br>
                         </g:if>
+                        <g:elseif test="${c['yourVote'][0] == 'Unknown'}">
+                            <span><b>You have commented without voting, please vote!</b></span>
+                        </g:elseif>
                         <g:else>
                             <span><b>You have voted</b></span>
                         </g:else>
