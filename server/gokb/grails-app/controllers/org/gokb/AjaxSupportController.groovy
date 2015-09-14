@@ -592,4 +592,4 @@ class AjaxSupportController {
 
     render result as JSON
   }
-}  
+}
