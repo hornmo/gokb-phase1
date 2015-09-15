@@ -844,10 +844,11 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('Subject.Classification', 'BISAC').save()
     RefdataCategory.lookupOrCreate('Subject.Classification', 'MESH').save()
     RefdataCategory.lookupOrCreate('Subject.Classification', 'LCSH').save()
-		
-    RefdataCategory.lookupOrCreate('ebook.filetype','kbart2').save()
-    RefdataCategory.lookupOrCreate('ebook.filetype','ingram').save()
-    RefdataCategory.lookupOrCreate('ebook.filetype','ybp').save()
+    
+    RefdataCategory.lookupOrCreate('ingest.filetype','kbart2').save()
+    RefdataCategory.lookupOrCreate('ingest.filetype','ingram').save()
+    RefdataCategory.lookupOrCreate('ingest.filetype','ybp').save()
+    RefdataCategory.lookupOrCreate('ingest.filetype','cufts').save()
 
     def ybp_source = Source.findByName('YBP') ?: new Source(name:'YBP').save(flush:true, failOnError:true);
     def cup_source = Source.findByName('CUP') ?: new Source(name:'CUP').save(flush:true, failOnError:true);
