@@ -64,4 +64,3 @@ class GenericOIDService {
     result
   }
 }
-
