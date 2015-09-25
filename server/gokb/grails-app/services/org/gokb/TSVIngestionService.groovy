@@ -504,8 +504,8 @@ class TSVIngestionService {
           // Find all tipps in this package which have a lastSeen before the ingest date
           def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
                            'from TitleInstancePackagePlatform as tipp, Combo as c '+
-                           'where c.fromComponent=? and c.toComponent=tipp and tipp.lastSeen < ? and tipp.accessEndDate is null',
-                          [the_package,ingest_date]);
+                           'where c.fromComponent=:pkg and c.toComponent=tipp and tipp.lastSeen < :dt and tipp.accessEndDate is null',
+                          [pkg:the_package,dt:ingest_date]);
 
           q.each { tipp ->
             log.debug("Soft delete missing tipp ${tipp.id} - last seen was ${tipp.lastSeen}, ingest date was ${ingest_date}");

@@ -1,18 +1,18 @@
 <table id="tab-decision-suppport" class="table table-bordered">
     <thead>
     <tr>
+        <th>Section</th>
         <th>Criterion</th>
         <th>Notes</th>
     </tr>
     </thead>
     <tbody>
     <g:each in="${d.decisionSupportLines.values()}" var="dsl">
-        <tr>
-            <td colspan="3" style="vertical-align:top;">
-                <h3>${dsl.description}</h3></td>
-        </tr>
-        <g:each in="${dsl.criterion}" var="id, c">
+        <g:each in="${dsl.criterion}" var="id, c" status="i">
             <tr>
+                <g:if test="${i==0}">
+                  <td rowspan="${dsl.criterion.size()}">${dsl.description}</td>
+                </g:if>
                 <td style="vertical-align:top; white-space: nowrap; width: 25%;">
                     <div class="criterionTitle">&nbsp;&nbsp;${c['title']}</div></br>
 
