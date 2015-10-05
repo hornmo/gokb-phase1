@@ -61,7 +61,6 @@ class BootStrap {
     def apiRole = Role.findByAuthority('ROLE_API') ?: new Role(authority: 'ROLE_API', roleType:'global').save(failOnError: true)
     def suRole = Role.findByAuthority('ROLE_SUPERUSER') ?: new Role(authority: 'ROLE_SUPERUSER', roleType:'global').save(failOnError: true)
     def refineUserRole = Role.findByAuthority('ROLE_REFINEUSER') ?: new Role(authority: 'ROLE_REFINEUSER', roleType:'global').save(failOnError: true)
-<<<<<<< Upstream, based on labs
 
 
 
@@ -137,9 +136,6 @@ class BootStrap {
     }
       
      
-=======
-    def refineTesterRole = Role.findByAuthority('ROLE_REFINETESTER') ?: new Role(authority: 'ROLE_REFINETESTER', roleType:'global').save(failOnError: true)
->>>>>>> 2b5e212 Added a new role of refine tester.
 
     log.debug("Create admin user...");
     def adminUser = User.findByUsername('admin')
@@ -154,7 +150,7 @@ class BootStrap {
     }
 
     // Make sure admin user has all the system roles.
-    [contributorRole,userRole,editorRole,adminRole,apiRole,suRole,refineUserRole,refineTesterRole].each { role ->
+    [contributorRole,userRole,editorRole,adminRole,apiRole,suRole].each { role ->
       if (!adminUser.authorities.contains(role)) {
         UserRole.create adminUser, role
       }
