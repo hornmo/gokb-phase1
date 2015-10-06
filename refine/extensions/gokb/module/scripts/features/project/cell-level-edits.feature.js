@@ -103,15 +103,19 @@ GOKb.registerFeature ('Cell-level edits', { 'require' : ['cell-level-edits'] }, 
         
         // Start with a copy of the text.
         var newValue = elmts.textarea.val();
+        var rawNewVal = newValue;
+        
         var type = elmts.typeSelect.val();
         if (type == "number") {
           newValue = parseFloat(newValue);
+          rawNewValue = newValue + "";
           if (isNaN(newValue)) {
             alert($.i18n._('core-views')["not-valid-number"]);
             return;
           }
         } else if (type == "boolean") {
           newValue = ("true" == newValue);
+          rawNewValue = newValue + "";
         } else if (type == "date") {
           newValue = Date.parse(newValue);
           if (!newValue) {
@@ -121,7 +125,8 @@ GOKb.registerFeature ('Cell-level edits', { 'require' : ['cell-level-edits'] }, 
             alert($.i18n._('core-views')["not-valid-date"]);
             return;
           }
-          newValue = "'" + newValue.toString("yyyy-MM-ddTHH:mm:ssZ") + "'.toDate()";
+          rawNewVal = newValue.toString("yyyy-MM-ddTHH:mm:ssZ");
+          newValue = "'" + rawNewVal + "'.toDate()";
         } else {
           // Assume string.
           newValue = "'" + newValue + "'";
@@ -130,6 +135,8 @@ GOKb.registerFeature ('Cell-level edits', { 'require' : ['cell-level-edits'] }, 
         // Every time a change is detected we should build up a GREL statement.
         // Grab each of the selected boxes.
         var checked = $('.cb-cell input[type=checkbox]:checked', table);
+        
+        var checkedColumnNames = [];
         
         // Only if checked items.
         if ( checked.length > 0) {
@@ -142,6 +149,10 @@ GOKb.registerFeature ('Cell-level edits', { 'require' : ['cell-level-edits'] }, 
             // The index to lookup.
             var index = $(this).val();
             var colName = colData[index][0];
+            
+            // We should keep track of the columns just for the message.
+            checkedColumnNames.push(colName);
+            
             var value = colData[index][1];
             
             // Statement segment.
@@ -175,14 +186,16 @@ GOKb.registerFeature ('Cell-level edits', { 'require' : ['cell-level-edits'] }, 
           MenuSystem.dismissAll();
           
           // Apply the grel.
-          Refine.postCoreProcess(
-            "text-transform",
+          GOKb.postProcess(
+            "capture-edit",
             {
               columnName: Refine.cellIndexToColumn(self._cellIndex).name,
               expression: constructedGrel,
               onError: 'keep-original',
               repeat: false,
-              repeatCount: 0
+              repeatCount: 0,
+              basedOn: checkedColumnNames,
+              value: rawNewVal
             },
             null,
             { cellsChanged: true }
