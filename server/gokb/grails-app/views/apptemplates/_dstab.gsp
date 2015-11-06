@@ -7,7 +7,7 @@
     </tr>
     </thead>
     <tbody>
-    <g:each in="${d.decisionSupportLines.values()}" var="dsl">
+    <g:each in="${d.decisionSupportLines?.values()}" var="dsl">
         <g:each in="${dsl.criterion}" var="id, c" status="i">
             <tr>
                 <g:if test="${i==0}">
