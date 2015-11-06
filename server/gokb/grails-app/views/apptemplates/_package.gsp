@@ -147,7 +147,7 @@
             </tr>
           </thead>
           <tbody>
-            <g:each in="${d.getRecentActivity(20)}" var="h">
+            <g:each in="${d?.getRecentActivity(20)}" var="h">
               <tr>
                 <td>${h[1]}</td>
                 <td>${h[2]}</td>

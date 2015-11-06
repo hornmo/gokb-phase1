@@ -289,20 +289,24 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
   public getRecentActivity(n) {
     def result = [];
 
-    // select tipp, accessStartDate, 'Added' from tipps UNION select tipp, accessEndDate, 'Removed' order by date
-    def additions = TitleInstancePackagePlatform.executeQuery('select tipp, tipp.accessStartDate, \'Added\' ' +
-                     'from TitleInstancePackagePlatform as tipp, Combo as c '+
-                     'where c.fromComponent=? and c.toComponent=tipp order by tipp.accessStartDate DESC',
-                    [this], [max:n]);
-    def deletions = TitleInstancePackagePlatform.executeQuery('select tipp, tipp.accessEndDate, \'Removed\' ' +
-                     'from TitleInstancePackagePlatform as tipp, Combo as c '+
-                     'where c.fromComponent=? and c.toComponent=tipp and tipp.accessEndDate is not null order by tipp.accessEndDate DESC',
-                    [this], [max:n]);
+    if ( this.id ) {
 
-    result.addAll(additions)
-    result.addAll(deletions)
-    result.sort {it[1]}
-    result = result.reverse();
+      // select tipp, accessStartDate, 'Added' from tipps UNION select tipp, accessEndDate, 'Removed' order by date
+
+      def additions = TitleInstancePackagePlatform.executeQuery('select tipp, tipp.accessStartDate, \'Added\' ' +
+                       'from TitleInstancePackagePlatform as tipp, Combo as c '+
+                       'where c.fromComponent=? and c.toComponent=tipp order by tipp.accessStartDate DESC',
+                      [this], [max:n]);
+      def deletions = TitleInstancePackagePlatform.executeQuery('select tipp, tipp.accessEndDate, \'Removed\' ' +
+                       'from TitleInstancePackagePlatform as tipp, Combo as c '+
+                       'where c.fromComponent=? and c.toComponent=tipp and tipp.accessEndDate is not null order by tipp.accessEndDate DESC',
+                       [this], [max:n]);
+  
+      result.addAll(additions)
+      result.addAll(deletions)
+      result.sort {it[1]}
+      result = result.reverse();
+    }
 
     return result;
   }
