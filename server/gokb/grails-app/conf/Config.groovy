@@ -1557,6 +1557,7 @@ globalSearch = [
 ]
 
 searchApi = [
+  'path'        : '/',
   'indices'     : 'gokb',
   'types'       : 'component',
   'typingField' : 'componentType',
