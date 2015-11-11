@@ -24,7 +24,7 @@ class TitleInstancePackagePlatform extends KBComponent {
   Date accessStartDate
   Date accessEndDate
   // The date on which we last encountered an assertion of this title/package/platform
-  Date lastSeen
+  Long lastSeen
   String notes
 
   private static refdataDefaults = [
