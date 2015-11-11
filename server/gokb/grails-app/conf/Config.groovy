@@ -238,6 +238,7 @@ log.info("Using log file location: ${logFile}")
 
 // Also add it as config value too.
 log_location = logFile
+log.info("Using log file location: ${logFile}")
 
 grails {
   fileViewer {
