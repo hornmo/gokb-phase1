@@ -459,13 +459,14 @@ class TSVIngestionService {
   //these are now ingestions of profiles.
   def ingest(the_profile, datafile, job=null) {
 
-    def start_time = System.currentTimeMillis();
+    long start_time = System.currentTimeMillis();
 
     log.debug("TSV ingestion called")
 
     try {
 
-      def ingest_date = new Date(start_time);
+      def ingest_systime = start_time
+      def ingest_date = new java.sql.Timestamp(start_time);
       log.debug("Ingest date is ${ingest_date}")
 
       job?.setProgress(0)
@@ -486,12 +487,12 @@ class TSVIngestionService {
       for (int x=0; x<kbart_beans.size;x++) {
         log.debug("Ingesting ${x} of ${kbart_beans.size}")
         TitleInstance.withNewTransaction {
-          writeToDB(kbart_beans[x], the_profile, datafile, ingest_date )
+          writeToDB(kbart_beans[x], the_profile, datafile, ingest_date, ingest_systime )
           if ( x % 50 == 0 ) {
             cleanUpGorm();
           }
         }
-        job?.setProgress( (x/kbart_beans.size()*100) as int)
+        job?.setProgress( (x / kbart_beans.size()*100) as int)
       }
 
       // the_profile.save(flush:true)
@@ -505,10 +506,10 @@ class TSVIngestionService {
           def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
                            'from TitleInstancePackagePlatform as tipp, Combo as c '+
                            'where c.fromComponent=:pkg and c.toComponent=tipp and tipp.lastSeen < :dt and tipp.accessEndDate is null',
-                          [pkg:the_package,dt:ingest_date]);
+                          [pkg:the_package,dt:ingest_systime]);
 
           q.each { tipp ->
-            log.debug("Soft delete missing tipp ${tipp.id} - last seen was ${tipp.lastSeen}, ingest date was ${ingest_date}");
+            log.debug("Soft delete missing tipp ${tipp.id} - last seen was ${tipp.lastSeen}, ingest date was ${ingest_systime}");
             // tipp.deleteSoft()
             tipp.accessEndDate = new Date();
             tipp.save()
@@ -535,7 +536,7 @@ class TSVIngestionService {
   }
 
   //this method does a lot of checking, and then tries to save the title to the DB.
-  def writeToDB(the_kbart, the_profile, the_datafile, ingest_date) {
+  def writeToDB(the_kbart, the_profile, the_datafile, ingest_date, ingest_systime) {
     //simplest method is to assume that everything is new.
     //however the golden rule is to check that something already exists and then
     //re-use it.
@@ -571,7 +572,7 @@ class TSVIngestionService {
             the_kbart.additional_authors.each { author ->
               addPerson(author, author_role, title)
             }
-            processTIPPS(the_profile.source, the_datafile, the_kbart, the_package, title, platform, ingest_date)
+            processTIPPS(the_profile.source, the_datafile, the_kbart, the_package, title, platform, ingest_date, ingest_systime)
           } else {
              log.warn("problem getting the title...")
           }
@@ -626,7 +627,8 @@ class TSVIngestionService {
                    the_package,
                    the_title,
                    the_platform,
-                   ingest_date) {
+                   ingest_date,
+                   ingest_systime) {
 
     log.debug("TSVIngestionService::processTIPPS with ${the_package}, ${the_title}, ${the_platform}, ${ingest_date}")
 
@@ -641,7 +643,7 @@ class TSVIngestionService {
       notes:the_kbart.notes?:'',
       // source:the_source,
       accessStartDate:ingest_date,
-      lastSeen:ingest_date
+      lastSeen:ingest_systime
     ]
 
     def tipp=null
@@ -684,9 +686,9 @@ class TSVIngestionService {
       }
     }
 
-    if ( ingest_date ) {
+    if ( ingest_systime ) {
       log.debug("Update last seen on tipp ${tipp.id} - set to ${ingest_date}")
-      tipp.lastSeen = ingest_date;
+      tipp.lastSeen = ingest_systime;
     }
 
     log.debug("save tipp")
