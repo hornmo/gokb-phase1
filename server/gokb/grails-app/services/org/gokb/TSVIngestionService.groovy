@@ -459,13 +459,13 @@ class TSVIngestionService {
   //these are now ingestions of profiles.
   def ingest(the_profile, datafile, job=null) {
 
-     def start_time = System.currentTimeMillis();
+    def start_time = System.currentTimeMillis();
 
     log.debug("TSV ingestion called")
 
     try {
 
-      def ingest_date = new Date();
+      def ingest_date = new Date(start_time);
       log.debug("Ingest date is ${ingest_date}")
 
       job?.setProgress(0)
@@ -498,8 +498,8 @@ class TSVIngestionService {
       def the_package=handlePackage(the_profile)
 
       log.debug("Expunging old tipps [Tipps belonging to ${the_package} last seen prior to ${ingest_date}] - ${the_profile.packageName}");
-      try {
 
+      try {
         TitleInstancePackagePlatform.withNewTransaction {
           // Find all tipps in this package which have a lastSeen before the ingest date
           def q = TitleInstancePackagePlatform.executeQuery('select tipp '+
@@ -628,7 +628,7 @@ class TSVIngestionService {
                    the_platform,
                    ingest_date) {
 
-    log.debug("TSVIngestionService::processTIPPS with ${the_package}, ${the_title}, ${the_platform}")
+    log.debug("TSVIngestionService::processTIPPS with ${the_package}, ${the_title}, ${the_platform}, ${ingest_date}")
 
     //first, try to find the platform. all we have to go in the host of the url.
     def tipp_values = [
