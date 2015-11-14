@@ -57,4 +57,12 @@ A script is provdied to import the ncsu orgs list, run from gokb-phase1/scripts/
 
 
 
+* Functional testing
+
+** On Ubuntu
+
+*** sudo apt-get install ttf-dejavu xvfb
+
+*** "grails test-app functional: GeneralSpec"
+
 bump
