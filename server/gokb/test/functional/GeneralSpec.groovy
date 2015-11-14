@@ -7,7 +7,7 @@ import spock.lang.Ignore
 @Stepwise
 class GeneralSpec extends BaseSpec {
 
-  def "Create organisation" (){
+  def "Test Front Page" (){
     setup:
       to FrontPage
       loginLink()

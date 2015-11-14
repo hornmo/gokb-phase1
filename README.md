@@ -63,6 +63,14 @@ A script is provdied to import the ncsu orgs list, run from gokb-phase1/scripts/
 
 *** sudo apt-get install ttf-dejavu xvfb
 
-*** "grails test-app functional: GeneralSpec"
+*** Running Func Tests
+      -> not in 2.3.11 :: "grails test-app functional: GeneralSpec"
+      -> not in 2.3.11 :: "grails -Dgrails.env=functional test-app functional: generalSpec"
+      -> not in 2.3.11 :: "grails -Dgeb.env=firefox -Dgrails.env=functional test-app -functional"
+    -> Testing in 2.3.11. now :: "grails -Dgeb.env=firefox -Dgrails.env=functional test-app functional: generalSpec"
+
 
 bump
+
+THIS ONE: grails -Dgeb.env=firefox -Dgrails.env=functional test-app -functional GeneralSpec
+

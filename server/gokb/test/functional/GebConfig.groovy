@@ -5,6 +5,9 @@
 
 import org.openqa.selenium.firefox.FirefoxDriver
 
+if (grails.util.Holders.config.geb.firefox) {
+    System.setProperty("webdriver.firefox.bin", grails.util.Holders.config.geb.firefox);
+}
 driver = { new FirefoxDriver()}
 reportsDir = "target/geb-reports"
 atCheckWaiting = true
@@ -14,9 +17,9 @@ environments {
 
     // run as “grails -Dgeb.env=chrome test-app”
     // See: http://code.google.com/p/selenium/wiki/ChromeDriver
-//    chrome {
-  //      driver = { new ChromeDriver() }
-    //}
+    // chrome {
+    //   driver = { new ChromeDriver() }
+    // }
 
     // run as “grails -Dgeb.env=firefox test-app”
     // See: http://code.google.com/p/selenium/wiki/FirefoxDriver
@@ -26,7 +29,7 @@ environments {
 }
 
 /*
-phantomjs = { DesiredCapabilities caps = new DesiredCapabilities()
+    phantomjs = { DesiredCapabilities caps = new DesiredCapabilities()
     caps.setCapability("takesScreenshot", true)
     caps.setCapability(PhantomJSDriverService.PHANTOMJS_EXECUTABLE_PATH_PROPERTY,
             "path/to/phantomjs.exe")
