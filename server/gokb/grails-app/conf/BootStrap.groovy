@@ -214,8 +214,11 @@ class BootStrap {
     
     failAnyIngestingProjects()
 
+    log.debug("Migrate disk files to database...");
     migrateDiskFilesToDatabase()
     
+    log.debug("Setting normalised titles for any components where it is null");
+
     KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.normname is null and kbc.name is not null").each { kbc_id ->
       KBComponent.withNewTransaction {
         KBComponent kbc = KBComponent.get(kbc_id)
@@ -226,7 +229,10 @@ class BootStrap {
       }
     }
     
+    log.debug("Setting default sort keys");
     defaultSortKeys ()
+
+    log.debug("Boostrap::Init Done");
   }
   
   def migrateDiskFilesToDatabase() {
@@ -274,6 +280,7 @@ class BootStrap {
       it.setProjectStatus(RefineProject.Status.INGEST_FAILED)
       it.save(flush:true)
     }
+    log.debug("failAnyIngestingProjects completed");
   }
 
   
