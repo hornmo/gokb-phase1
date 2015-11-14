@@ -206,10 +206,13 @@ class BootStrap {
       f.mkdirs()
     }
 
+    log.debug("Setup refdata categories");
     refdataCats()
 
+    log.debug("Register domain classes");
     registerDomainClasses()
 
+    log.debug("Add validation rules");
     addValidationRules()
     
     failAnyIngestingProjects()

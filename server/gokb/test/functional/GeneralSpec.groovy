@@ -7,12 +7,16 @@ import spock.lang.Ignore
 @Stepwise
 class GeneralSpec extends BaseSpec {
 
+   // see http://www.adavis.info/2014/04/grails-functional-testing-with-geb-and.html
+
   def "Test Front Page" (){
     setup:
       to FrontPage
+      report "GoKB front page"
       loginLink()
-      // at LogInPage
-      // login(Data.UserD_name, Data.UserD_passwd)
+      report "GoKB login page"
+      at LogInPage
+      login(Data.admin_username, Data.admin_password)
     when:
       go "/gokbLabs"
       // $("form").name = Data.Org_name
@@ -21,7 +25,7 @@ class GeneralSpec extends BaseSpec {
       // report "google home page"
       // $("#SubmitButton").click()
     then:
-      browser.page.title.startsWith "GOKb: Welcome"
+      browser.page.title.startsWith 'GOKb: Dashboard'
   }
 
 }

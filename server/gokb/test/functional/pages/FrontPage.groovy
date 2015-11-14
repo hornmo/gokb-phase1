@@ -8,8 +8,8 @@ class FrontPage extends BasePage {
 
     static content = {
         loginLink {
-            waitFor { $("a", text: " Sign in")}
-             $("a", text: " Sign in").click()
+            waitFor { $("a", href: '/gokbLabs/login/index')}
+             $("a", href: '/gokbLabs/login/index').click()
         }
 
     }
