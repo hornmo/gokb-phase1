@@ -8,6 +8,7 @@ import spock.lang.Ignore
 class GeneralSpec extends BaseSpec {
 
    // see http://www.adavis.info/2014/04/grails-functional-testing-with-geb-and.html
+   // see https://grails.org/plugin/functional-test
 
   def "Test Front Page" (){
     setup:
