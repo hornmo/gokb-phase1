@@ -24,7 +24,7 @@
 		  <label class="control-label">Ingestion Profiles</label>
 		  <g:simpleReferenceTypedown class="form-control" name="ingestionProfileId" baseClass="org.gokb.cred.IngestionProfile"/>
 
-		   <button class="hidden-license-details btn btn-default btn-sm btn-primary" type="button"
+		   <button id="NewIngestProfileButton" class="hidden-license-details btn btn-default btn-sm btn-primary" type="button"
 					data-toggle="collapse" data-target="#collapseableAddIP">Add new <i class="glyphicon glyphicon-plus"></i>
 		   </button>
 		</div>

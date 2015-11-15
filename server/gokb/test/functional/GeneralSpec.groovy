@@ -29,4 +29,31 @@ class GeneralSpec extends BaseSpec {
       browser.page.title.startsWith 'GOKb: Dashboard'
   }
 
+  def "Create a new source for CUP"() {
+    setup:
+      to CreateSource
+    when:
+      waitElement {$('#\\:shortcode').click()}
+      $('form.editableform div.editable-input textarea.form-control').value('CUP')
+      $('form.editableform button.editable-submit').click()
+      waitElement {$('#\\:name').click()}
+      $('form.editableform div.editable-input textarea.form-control').value('Cambridge University Press')
+      $('form.editableform button.editable-submit').click()
+      $('#save-btn').click()
+    then:
+      1==1
+  }
+
+  def "Load CUP all titles file"() {
+    setup:
+      to EbooksUpload
+    when:
+      $('#NewIngestProfileButton').click()
+      $('Form').profileName='CUP Master File'
+      $('Form').packageName='CUP Master File'
+      $('Form').platformUrl='http://www.cup.ac.uk'
+    then:
+      1==1
+  }
+
 }
