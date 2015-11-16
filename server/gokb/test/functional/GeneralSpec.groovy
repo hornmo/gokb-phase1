@@ -65,14 +65,25 @@ class GeneralSpec extends BaseSpec {
       $('#s2id_autogen5').click()
       report "Selected KBART"
       synchronized(this) { Thread.sleep(500) }
+
       report "Click source"
       $('#select2-result-label-17').click()
       report "Selected CUP"
-      $('#submissionFile').value('///some/file')
+
+      $('#ingestModeSelect').click();
+      $('#FGMode').click();
+
+      $('#submissionURL').value('https://github.com/k-int/gokb-phase1/raw/labs/testdata/ebooks/journals.cambridge.org_AllTitles_2015-07-14.txt');
       report "Set file"
+
+      def start = System.currentTimeMillis();
       // Load https://github.com/k-int/gokb-phase1/raw/labs/testdata/ebooks/YBP1_1.tsv
+      $('#submit-url').click();
+
     then:
       synchronized(this) { Thread.sleep(5000) }
+      def elapsed = System.currentTimeMillis() - start
+      report "Ingest completed in ${elapsed}";
       1==1
   }
 

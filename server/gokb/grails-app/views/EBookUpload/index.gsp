@@ -81,7 +81,7 @@
             </span>
             <span class='form-control' id="upload-file-info"><label for="submissionFile" >Select a file...</label></span>
             <span class="input-group-btn">
-              <button type="submit" class="btn btn-primary">Upload via local File</button>
+              <button id="submit-local-file" type="submit" class="btn btn-primary">Upload via local File</button>
             </span>
           </div>
         </div>
@@ -92,7 +92,7 @@
           <div class="input-group" >
             <input type='text' class='form-control' name='submissionURL' id='submissionURL' placeholder='Enter the URL Of resource to ingest' />
             <span class="input-group-btn">
-              <button type="submit" class="btn btn-primary">Upload via Remote URL</button>
+              <button id="submit-url" type="submit" class="btn btn-primary">Upload via Remote URL</button>
             </span>
           </div>
         </div>
@@ -101,9 +101,9 @@
           <label class="control-label" for="ingestMode">Ingest Mode</label>
 
           <div class="input-group" >
-            <select name="ingestMode" class="form-control">
-              <option value="background" selected="true">Background - after submission go directly to the upload status page</option>
-              <option value="foreground">Foreground - This page will not return until the ingest has completed</option>
+            <select id="ingestModeSelect" name="ingestMode" class="form-control">
+              <option id="BGMode" value="background" selected="true">Background - after submission go directly to the upload status page</option>
+              <option id="FGMode" value="foreground">Foreground - This page will not return until the ingest has completed</option>
             </select>
           </div>
         </div>
