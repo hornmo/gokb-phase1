@@ -97,6 +97,18 @@
           </div>
         </div>
 
+       <div class="form-group">
+          <label class="control-label" for="ingestMode">Ingest Mode</label>
+
+          <div class="input-group" >
+            <select name="ingestMode" class="form-control">
+              <option value="background" selected="true">Background - after submission go directly to the upload status page</option>
+              <option value="foreground">Foreground - This page will not return until the ingest has completed</option>
+            </select>
+          </div>
+        </div>
+
+
       </g:form>
     </div>
   </div>

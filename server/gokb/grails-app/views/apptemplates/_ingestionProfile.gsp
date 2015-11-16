@@ -38,8 +38,9 @@
     <div class="tab-pane" id="ingestions">
       <g:render template="componentIngestion" contextPath="../apptemplates"
 				model="${[d:d, property:'ingestions', cols:[[expr:'component.name',colhead:'Name', action:'link-component'],
-						                                    [expr:'component.dateCreated', colhead: 'Creation Date'],
-														    [expr:'component.tipps.size()', colhead:'# Tipps']]]}" />
+						                            [expr:'component.dateCreated', colhead: 'Creation Date'],
+									    [expr:'component.tipps.size()', colhead:'# Tipps'],
+                                                                            [expr:'component.elapsed', colhead:'Elapsed']]]}" />
     </div>
     
     <div class="tab-pane" id="newtipps">

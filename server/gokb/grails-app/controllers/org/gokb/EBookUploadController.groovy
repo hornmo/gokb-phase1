@@ -12,6 +12,9 @@ class EBookUploadController {
   def TSVIngestionService
   def concurrencyManagerService
   def genericOIDService
+  def sessionFactory
+  def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
+
   
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def index() {
@@ -27,6 +30,7 @@ class EBookUploadController {
   
   @Secured(['ROLE_USER', 'IS_AUTHENTICATED_FULLY'])
   def processSubmission() {
+    log.debug(params)
     if ( request.method == 'POST' ) {
     def temp_file
     try {
@@ -125,17 +129,34 @@ class EBookUploadController {
       if (!ingestion_profile.ingestions) {
         ingestion_profile.ingestions=[]  
       }
-      ingestion_profile.ingestions << new ComponentIngestionSource(profile:ingestion_profile,
-                                     component:new_datafile)
+
+      def new_ingestion_info = new ComponentIngestionSource(profile:ingestion_profile, component:new_datafile)
+      ingestion_profile.ingestions << new_ingestion_info
+
       new_datafile.save(flush:true)
       ingestion_profile.save(flush:true)
       log.debug("Saved file on database ")
+
+
+
       Job background_job = concurrencyManagerService.createJob { Job job ->
         // Create a new session to run the ingest.
         TSVIngestionService.ingest(ingestion_profile, new_datafile, job)
         log.debug ("Async Data insert complete")
-        }
-        .startOrQueue()
+      }
+      background_job.startOrQueue()
+
+      // Release all objects so we don't get any clashes
+      cleanUpGorm();
+
+      // Wait
+      log.debug("Ingest mode: ${params.ingestMode}");
+      if ( params.ingestMode=='background' ) {
+      }
+      else {
+        log.debug("Foreground mode.. waiting");
+        background_job.get();
+      }
 
       redirect(controller:'resource',action:'show',id:"org.gokb.cred.IngestionProfile:${ingestion_profile.id}")
       }
@@ -207,4 +228,18 @@ class EBookUploadController {
     result
   }
   
+  def cleanUpGorm() {
+    log.debug("Clean up GORM");
+
+    // Get the current session.
+    def session = sessionFactory.currentSession
+
+    // flush and clear the session.
+    session.flush()
+    session.clear()
+
+    // Clear the property instance map.
+    propertyInstanceMap.get().clear()
+  }
+
 }
