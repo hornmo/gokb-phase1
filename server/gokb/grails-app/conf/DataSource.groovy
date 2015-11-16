@@ -55,7 +55,7 @@ environments {
             testOnReturn=true
             validationQuery="select 1"
         }
-    }
+      }
     }
     production {
         dataSource {
@@ -101,5 +101,27 @@ environments {
             }
         }
     }
+    PGfunctional {
+        dataSource {
+            dbCreate = "create"
+            driverClassName = "org.postgresql.Driver"
+            dialect = org.hibernate.dialect.PostgreSQLDialect
+            username = "k-int"
+            password = "k-int"
+            url = "jdbc:postgresql://localhost:5432/GoKBFunctional"
+            pooled = true
+            properties {
+                maxActive = 500
+                minEvictableIdleTimeMillis=1800000
+                timeBetweenEvictionRunsMillis=1800000
+                numTestsPerEvictionRun=3
+                testOnBorrow=true
+                testWhileIdle=true
+                testOnReturn=true
+                validationQuery="select 1"
+            }
+        }
+    }
+
 
 }

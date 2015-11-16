@@ -63,9 +63,11 @@ class RefdataValue {
     def query_params = ["%${params.q.toLowerCase()}%"]
 
     if ( ( params.filter1 != null ) && ( params.filter1.length() > 0 ) ) {
-      query += " and rv.owner.desc = ? order by rv.sortKey, rv.description"
+      query += ' and rv.owner.desc = ?'
       query_params.add(params.filter1);
     }
+
+    query += ' order by rv.sortKey, rv.description, rv.id'
 
     ql = RefdataValue.findAll(query, query_params, params)
 

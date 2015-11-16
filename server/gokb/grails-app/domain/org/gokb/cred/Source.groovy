@@ -33,10 +33,12 @@ class Source extends KBComponent {
   }
 
   static def refdataFind(params) {
+
     def result = [];
     def ql = null;
-    ql = Source.findAllByNameIlike("${params.q}%",params)
 
+    def query_params = ["%${params.q.toLowerCase()}%"]
+    ql = Source.findAll('from Source as s where lower(s.name) like ? order by s.name',query_params)
     if ( ql ) {
       ql.each { t ->
         result.add([id:"${t.class.name}:${t.id}",text:"${t.name}"])

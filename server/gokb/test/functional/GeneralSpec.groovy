@@ -58,12 +58,20 @@ class GeneralSpec extends BaseSpec {
       $('Form').platformUrl='http://www.cup.ac.uk'
       // Click the format dropdown - and select kbart2
       $('#s2id_autogen3').click()
-      $('#select2-result-label-42').click()
+      synchronized(this) { Thread.sleep(500) }
+      report "Click format"
+      $('#select2-result-label-12').click()
       // Click the source dropdown - and select CUP
       $('#s2id_autogen5').click()
-      $('#select2-result-label-36').click()
+      report "Selected KBART"
+      synchronized(this) { Thread.sleep(500) }
+      report "Click source"
+      $('#select2-result-label-17').click()
+      report "Selected CUP"
       $('#submissionFile').value('///some/file')
+      report "Set file"
     then:
+      synchronized(this) { Thread.sleep(5000) }
       1==1
   }
 

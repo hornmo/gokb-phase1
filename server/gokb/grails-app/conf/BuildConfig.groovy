@@ -62,6 +62,7 @@ grails.project.dependency.resolution = {
         // specify dependencies here under either 'build', 'compile', 'runtime', 'test' or 'provided' scopes eg.
         runtime 'mysql:mysql-connector-java:5.1.32'
         // runtime "postgresql:postgresql:8.3-603.jdbc3"
+        runtime 'postgresql:postgresql:9.0-801.jdbc4'
         // To allow us to un-tgz uploaded data files
         runtime 'org.apache.commons:commons-compress:1.9'
         runtime 'org.apache.tika:tika-core:1.6'

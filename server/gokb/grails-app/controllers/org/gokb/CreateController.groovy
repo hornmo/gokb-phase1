@@ -162,7 +162,7 @@ class CreateController {
     }
     log.debug("CreateController::process return");
     // Remove newobj from the json so we don't serialize a whole load of stuff
-    // result.newobj=null
+    result.newobj=null
     render result as JSON
   }
 }
