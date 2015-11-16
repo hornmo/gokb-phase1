@@ -70,6 +70,7 @@ class GeneralSpec extends BaseSpec {
       report "Selected CUP"
       $('#submissionFile').value('///some/file')
       report "Set file"
+      // Load https://github.com/k-int/gokb-phase1/raw/labs/testdata/ebooks/YBP1_1.tsv
     then:
       synchronized(this) { Thread.sleep(5000) }
       1==1
