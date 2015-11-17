@@ -86,7 +86,7 @@ class GeneralSpec extends BaseSpec {
       def elapsed = System.currentTimeMillis() - start
       def a = report "Ingest of CUP completed"
       println "Ingest of CUP Master list completed in ${elapsed}ms == ${elapsed/1000}s";
-      println('Image at ../../geb-reports/GeneralSpec/003-006-Load%20CUP%20all%20titles%20file-Ingest%20of%20CUP%20completed.png');
+      // println('Image at ../../geb-reports/GeneralSpec/003-006-Load%20CUP%20all%20titles%20file-Ingest%20of%20CUP%20completed.png');
       browser.page.title.startsWith 'GOKb: Ingestion Profile'
 
       // Select the ingestions tab
@@ -111,6 +111,27 @@ class GeneralSpec extends BaseSpec {
       searchFor('Acta Numerica')
     then:
       def total = $('#search-result-total-records').text()?.trim()
+      total=='1'
+      report "Search for Acta Numerica returns 1 record"
+  }
+
+  def "Following link to title details page works"() {
+    setup:
+      // Stepwise from above
+    when:
+      $('a',text:'Acta Numerica').click()
+    then:
+      browser.page.title.startsWith 'GOKb: Title'
+      report "Acta Numerica title details"
+  }
+
+  def "Check that title is set to 'BOOK: Acta Numerica (Modify title through variants below)'"() {
+    setup:
+      // Stepwise from above
+    when:
+      def title = $('span',text:'Title').parent().next().text()
+    then:
+      title == 'BOOK: Acta Numerica (Modify title through variants below)'
   }
 
 }
