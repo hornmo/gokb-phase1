@@ -43,7 +43,8 @@ class User {
   }
 
   static mapping = {
-    password column: '`password`'
+    table 'gokbuser'
+    password column: 'gokbpwd'
   }
 
   Set<Role> getAuthorities() {
