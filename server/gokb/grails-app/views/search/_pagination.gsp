@@ -3,9 +3,9 @@
 	<nav class="navbar navbar-inverse">
 		<div class="container-fluid">
 			<div class="navbar-header">
-				<span class="navbar-brand">
+				<span id="search-result-count-info" class="navbar-brand">
 					Showing records ${offset.toInteger() +1} to ${lasthit.toInteger() as int} of
-					${reccount.toInteger() as int}
+					<span id="search-result-total-records">${reccount.toInteger() as int}</span>
 				</span>
 			</div>
 			<ul class="nav navbar-nav navbar-right">

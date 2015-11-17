@@ -156,6 +156,7 @@ class EBookUploadController {
       else {
         log.debug("Foreground mode.. waiting");
         background_job.get();
+        flash.message="Ingest completed"
       }
 
       redirect(controller:'resource',action:'show',id:"org.gokb.cred.IngestionProfile:${ingestion_profile.id}")
