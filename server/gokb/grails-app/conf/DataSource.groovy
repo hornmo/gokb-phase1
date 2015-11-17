@@ -106,10 +106,12 @@ environments {
             dbCreate = "create"
             driverClassName = "org.postgresql.Driver"
             dialect = org.hibernate.dialect.PostgreSQLDialect
-            username = "k-int"
-            password = "k-int"
+            username = "knowint"
+            password = "knowint"
             url = "jdbc:postgresql://localhost:5432/GoKBFunctional"
             pooled = true
+            formatSql=true
+            logSql=true
             properties {
                 maxActive = 500
                 minEvictableIdleTimeMillis=1800000

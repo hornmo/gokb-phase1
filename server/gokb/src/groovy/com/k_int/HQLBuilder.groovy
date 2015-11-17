@@ -107,23 +107,24 @@ public class HQLBuilder {
     }
 
     def hql = outputHql(hql_builder_context, qbetemplate)
+    def count_clause = emitCountClause(hql_builder_context, qbetemplate)
     // log.debug("HQL: ${hql}");
     // log.debug("BindVars: ${hql_builder_context.bindvars}");
 
     def count_hql = "select count (o) ${hql}"
     def fetch_hql = null
     if ( returnObjectsOrRows=='objects' ) {
-      fetch_hql = "select o ${hql}"
+      fetch_hql = "select o ${hql} ${count_clause}"
     }
     else {
-      fetch_hql = "select ${buildFieldList(qbetemplate.qbeConfig.qbeResults)} ${hql}"
+      fetch_hql = "select ${buildFieldList(qbetemplate.qbeConfig.qbeResults)} ${hql} ${count_clause}"
     }
 
-    // log.debug("Attempt count qry ${count_hql}");
+    log.debug("Attempt count qry ${count_hql}");
     // log.debug("Attempt qry ${fetch_hql}");
 
     result.reccount = baseclass.executeQuery(count_hql, hql_builder_context.bindvars)[0]
-    // log.debug("Got count result: ${result.reccount}");
+    log.debug("Got count result: ${result.reccount}");
 
     def query_params = [:]
     if ( result.max )
@@ -308,12 +309,21 @@ public class HQLBuilder {
       }
     }
 
+    // Return the toString of the writer
+    sw.toString();
+  }
+
+  static def emitCountClause(hql_builder_context, qbetemplate) {
+
+    StringWriter sw = new StringWriter()
+
     if ( ( hql_builder_context.sort != null ) && ( hql_builder_context.sort.length() > 0 ) ) {
       sw.write(" order by o.${hql_builder_context.sort} ${hql_builder_context.order}");
     }
 
     // Return the toString of the writer
     sw.toString();
+
   }
 
   static def buildFieldList(defns) {
