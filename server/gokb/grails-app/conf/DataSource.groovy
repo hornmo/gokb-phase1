@@ -21,6 +21,7 @@ environments {
             password = "k-int"
             url = "jdbc:mysql://localhost/GoKBLabsDev?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8"
             pooled = true
+            configClass = 'com.k_int.KIGormConfiguration'
             properties {
                 maxActive = 500
                 minEvictableIdleTimeMillis=1800000

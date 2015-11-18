@@ -134,4 +134,14 @@ class GeneralSpec extends BaseSpec {
       title == 'BOOK: Acta Numerica (Modify title through variants below)'
   }
 
+  def "Collect monitoring data"() {
+    setup:
+      to MonitoringPage
+    when:
+      $('a', href:'<a href="javascript:showHide('+"'detailssql'"+');"').click();
+    then:
+      1==1
+      report "monitoring"
+  }
+
 }
