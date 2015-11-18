@@ -98,9 +98,6 @@ window.gokb = {
         
       } else {
         
-        // Get the message attribute.
-        var message = target.attr('data-confirm-message');
-        
         // Prevent default as we need to confirm the action.
         e.preventDefault();
         
@@ -117,8 +114,6 @@ window.gokb = {
           target.attr('data-confirm-yes'),
           target.attr('data-confirm-no')
         );
-          
-          
       }
     });
     
@@ -147,6 +142,8 @@ window.gokb = {
     
     $('.xEditableValue').editable();
     $(".xEditableManyToOne").editable();
+    
+    
     
     // Handle dates differently now.
     $('.ipe').each(function() {
@@ -189,7 +186,7 @@ window.gokb = {
     
     results.each(function() {
       
-      $(this).select2({
+      var conf = {
         placeholder: "Search for...",
         allowClear: true,
         width:'resolve',
@@ -218,7 +215,25 @@ window.gokb = {
           var data = {id: idv, text: txt};
           callback(data);
         }
-      });
+      };
+      
+      var me = $(this);
+      
+      if (me.hasClass("allow-add")) {
+        // Add to the config...
+        conf.createSearchChoice = function(term, data) {
+          if ($(data).filter(function() {
+            return term.localeCompare(this.text) === 0;
+          }).length === 0) {
+            return {
+              id: me.data('domain') + ":__new__:" + me.data('filter1') + ":" + term, 
+              text:  term  + ' (new tag)'
+            };
+          }
+        };
+      }
+      
+      me.select2(conf);
     });
   
     $(".xEditableManyToOneS2").each(function(elem) {
@@ -284,6 +299,25 @@ window.gokb = {
       me.showMore();
       var button = me.showMore('getButton');
       button.addClass('btn btn-default');
+    });
+    
+    // Add the json handling to the textareas.
+    $(".json").on("paste", function(e){
+      
+      // Halt all other events.
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      
+      try {
+        // Access the clipboard using the api
+        var pastedData = e.originalEvent.clipboardData.getData('text');
+        
+        var data = $.parseJSON ( pastedData );
+        
+        $(e.target)[0].value = JSON.stringify(data, null, "  ");
+      } catch (e) {
+        alert ("The JSON you are attempting to paste is incorrectly formatted. Please ensure you copy everything from the source.")
+      }
     });
     
   });

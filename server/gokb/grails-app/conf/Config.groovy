@@ -1113,6 +1113,29 @@ globalSearchTemplates = [
       ]
     ]
   ],
+  'Macros':[
+    baseclass:'org.gokb.cred.Macro',
+    title:'Macros',
+    group:'Secondary',
+    qbeConfig:[
+      qbeForm:[
+        [
+          prompt:'Name or Title',
+          qparam:'qp_name',
+          placeholder:'Name or title of Macro',
+          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+        ],
+      ],
+      qbeGlobals:[
+        ['ctxtp':'filter', 'prop':'status.value', 'comparator' : 'eq', 'value':'Deleted', 'negate' : true, 'prompt':'Hide Deleted',
+         'qparam':'qp_showDeleted', 'default':'on']
+      ],
+      qbeResults:[
+        [heading:'Name/Title', property:'name',sort:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ],
+        [heading:'Status', property:'status.value',sort:'status'],
+      ]
+    ]
+  ],
   'CuratoryGroups':[
     baseclass:'org.gokb.cred.CuratoryGroup',
     title:'Curatory Groups',
