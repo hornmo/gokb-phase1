@@ -134,14 +134,14 @@ class EBookUploadController {
       ingestion_profile.ingestions << new_ingestion_info
 
       new_datafile.save(flush:true)
-      ingestion_profile.save(flush:true)
-      log.debug("Saved file on database ")
+      def ip_id = ingestion_profile.save(flush:true)
+      log.debug("Saved file on database, ip_id=${ip_id} ")
 
 
 
       Job background_job = concurrencyManagerService.createJob { Job job ->
         // Create a new session to run the ingest.
-        TSVIngestionService.ingest(ingestion_profile, new_datafile, job)
+        TSVIngestionService.ingest(ingestion_profile, new_datafile, job, ip_id)
         log.debug ("Async Data insert complete")
       }
       background_job.startOrQueue()

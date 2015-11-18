@@ -41,12 +41,12 @@ class DataFile extends KBComponent {
   
   static manyByCombo = [
     attachedToComponents : KBComponent,
-	tipps: TitleInstancePackagePlatform
+    // tipps: TitleInstancePackagePlatform
   ]
 
   static mappedByCombo = [
     attachedToComponents : 'fileAttachments',
-	tipps: 'datafile'
+    // tipps: 'datafile'
   ]
 
     /**

@@ -240,57 +240,58 @@ class TSVIngestionService {
   def BookInstance addPerson (person_name, role, ti, user=null, project = null) {
     if (person_name) {
       def person = componentLookupService.findComponents('org.gokb.cred.Person', person_name)
-    log.debug("this was found for person: ${person}");
-    switch(person.size()) {
-      case 0:
-        log.debug("Person lookup yielded no matches.")
-        def the_person = new Person(name:person_name)
-          if (the_person.save(failOnError:true, flush:true)) {
-          log.debug("saved ${the_person.name}")
-          person << the_person
-          ReviewRequest.raise(
-          ti,
-          "'${the_person}' added as ${role.value} of '${ti.name}'.",
-           "This person did not exist before, so has been newly created",
-          user, project)
-          } else {
-            the_person.errors.each { error ->
-          log.error("problem saving ${the_person.name}:${error}")
-          }
-          }
-      case 1:
-        def people = ti.getPeople()?:[]
-        log.debug("ti.getPeople ${people}")
-        // Has the person ever existed in the list against this title.
-        boolean done=false;
-        for (cp in people) {
-          if (!done && (cp.person.id==person[0].id &&
-                  cp.role.id==role.id) ) {
-            done=true;
-            }
-        }
-        if (!done) {
-        def componentPerson = new ComponentPerson(component:ti,
-                                person:person,
-                              role:role)
-          log.debug("people did not contain this person")
-          // First person added?
-          boolean not_first = people.size() > 0
-        boolean added = componentPerson.save(failOnError:true, flush:true);
-        if (!added) {
-          componentPerson.errors.each { error ->
-          log.error("problem saving ${componentPerson}:${error}")
-          }
-        }
-          // Raise a review request, if needed.
-          if (not_first && added) {
-          ReviewRequest.raise(
+      log.debug("this was found for person: ${person}");
+      switch(person.size()) {
+        case 0:
+          log.debug("Person lookup yielded no matches.")
+          def the_person = new Person(name:person_name)
+            if (the_person.save(failOnError:true, flush:true)) {
+            log.debug("saved ${the_person.name}")
+            person << the_person
+            ReviewRequest.raise(
             ti,
-            "Added '${person.name}' as ${role.value} on '${ti.name}'.",
-            "Person supplied in ingested file is additional to any already present on BI.",
+            "'${the_person}' added as ${role.value} of '${ti.name}'.",
+             "This person did not exist before, so has been newly created",
             user, project)
-        }
-      }
+            } else {
+              the_person.errors.each { error ->
+                log.error("problem saving ${the_person.name}:${error}")
+              }
+            }
+        case 1:
+          def people = ti.getPeople()?:[]
+          log.debug("ti.getPeople ${people}")
+          // Has the person ever existed in the list against this title.
+          boolean done=false;
+          for (cp in people) {
+            if (!done && (cp.person.id==person[0].id && cp.role.id==role.id) ) {
+              done=true;
+            }
+          }
+
+          if (!done) {
+            def componentPerson = new ComponentPerson(component:ti, person:person, role:role)
+
+            log.debug("people did not contain this person")
+            // First person added?
+
+            boolean not_first = people.size() > 0
+            boolean added = componentPerson.save(failOnError:true, flush:true);
+
+            if (!added) {
+              componentPerson.errors.each { error ->
+              log.error("problem saving ${componentPerson}:${error}")
+              }
+            }
+
+            // Raise a review request, if needed.
+            if (not_first && added) {
+              ReviewRequest.raise( ti,
+                      "Added '${person.name}' as ${role.value} on '${ti.name}'.",
+                      "Person supplied in ingested file is additional to any already present on BI.",
+                      user, project)
+            }
+          }
       break
       default:
       log.debug ("Person lookup yielded ${person.size()} matches. Not really sure which person to use, so not using any.")
@@ -457,7 +458,7 @@ class TSVIngestionService {
   }
 
   //these are now ingestions of profiles.
-  def ingest(the_profile, datafile, job=null) {
+  def ingest(the_profile, datafile, job=null,ip_id=null) {
 
     long start_time = System.currentTimeMillis();
 
@@ -481,15 +482,19 @@ class TSVIngestionService {
         kbart_beans = getKbartBeansFromKBartFile(datafile)
       }
 
+      def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
+      def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
 
       log.debug("Ingesting ${kbart_beans.size} rows")
       //now its converted, ingest it into the database.
       for (int x=0; x<kbart_beans.size;x++) {
         log.debug("Ingesting ${x} of ${kbart_beans.size}")
         TitleInstance.withNewTransaction {
-          writeToDB(kbart_beans[x], the_profile, datafile, ingest_date, ingest_systime )
+          writeToDB(kbart_beans[x], the_profile, datafile, ingest_date, ingest_systime, author_role, editor_role )
           if ( x % 50 == 0 ) {
             cleanUpGorm();
+            author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
+            editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
           }
         }
         job?.setProgress( (x / kbart_beans.size()*100) as int)
@@ -536,7 +541,7 @@ class TSVIngestionService {
   }
 
   //this method does a lot of checking, and then tries to save the title to the DB.
-  def writeToDB(the_kbart, the_profile, the_datafile, ingest_date, ingest_systime) {
+  def writeToDB(the_kbart, the_profile, the_datafile, ingest_date, ingest_systime, author_role, editor_role) {
     //simplest method is to assume that everything is new.
     //however the golden rule is to check that something already exists and then
     //re-use it.
@@ -544,10 +549,15 @@ class TSVIngestionService {
     //first we need a platform:
     URL platform_url=new URL(the_kbart.title_url?:the_profile.platformUrl)
     def platform = handlePlatform(platform_url.host, the_profile.source)
+
     if (platform!=null) {
+
       def the_package=handlePackage(the_profile)
+
       if (the_package!=null) {
+
         log.debug(the_kbart.online_identifier)
+
         def identifiers = []
         identifiers << [type:'isbn', value:the_kbart.online_identifier]
         the_kbart.additional_isbns.each { identifier ->
@@ -558,10 +568,6 @@ class TSVIngestionService {
           def title = find(the_kbart.publication_title, identifiers)
           title.source=the_profile.source
           log.debug("title found: for ${the_kbart.publication_title}:${title}")
-          def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory,
-                                      grailsApplication.config.kbart2.authorRole)
-          def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory,
-                                     grailsApplication.config.kbart2.editorRole)
 
           if (title) {
             addOtherFieldsToTitle(title, the_kbart)
@@ -572,7 +578,10 @@ class TSVIngestionService {
             the_kbart.additional_authors.each { author ->
               addPerson(author, author_role, title)
             }
-            processTIPPS(the_profile.source, the_datafile, the_kbart, the_package, title, platform, ingest_date, ingest_systime)
+            
+            def pre_create_tipp_time = System.currentTimeMillis();
+            createTIPP(the_profile.source, the_datafile, the_kbart, the_package, title, platform, ingest_date, ingest_systime)
+            log.debug("create tipp took ${System.currentTimeMillis() - pre_create_tipp_time}");
           } else {
              log.warn("problem getting the title...")
           }
@@ -621,7 +630,7 @@ class TSVIngestionService {
     the_date
   }
 
-  def processTIPPS(the_source,
+  def createTIPP(the_source,
                    the_datafile,
                    the_kbart,
                    the_package,
@@ -630,7 +639,7 @@ class TSVIngestionService {
                    ingest_date,
                    ingest_systime) {
 
-    log.debug("TSVIngestionService::processTIPPS with ${the_package}, ${the_title}, ${the_platform}, ${ingest_date}")
+    log.debug("TSVIngestionService::createTIPP with ${the_package}, ${the_title}, ${the_platform}, ${ingest_date}")
 
     //first, try to find the platform. all we have to go in the host of the url.
     def tipp_values = [
@@ -679,9 +688,12 @@ class TSVIngestionService {
 
       // Set all properties on the object.
       tipp_values.each { prop, value ->
-        // Only set the property if we have a value.
-        if (value != null && value != "") {
-          tipp."${prop}" = value
+        // Only update if we actually have a change to make
+        if ( tipp."${prop}" != value ) {
+          // Only set the property if we have a value.
+          if (value != null && value != "") {
+            tipp."${prop}" = value
+          }
         }
       }
     }
@@ -693,11 +705,11 @@ class TSVIngestionService {
 
     log.debug("save tipp")
     tipp.save(failOnError:true, flush:true)
-    if (!the_datafile.tipps.find {_tipp->_tipp.id==tipp.id}) {
-      the_datafile.tipps << tipp
-    }
-    the_datafile.save(flush:true)
-    log.debug("processTIPPS returning")
+    // if (!the_datafile.tipps.find {_tipp->_tipp.id==tipp.id}) {
+    //   the_datafile.tipps << tipp
+    // }
+    // the_datafile.save(flush:true)
+    log.debug("createTIPP returning")
   }
 
   //this is a lot more complex than this for journals. (which uses refine)
