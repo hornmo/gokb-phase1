@@ -519,10 +519,9 @@ class TSVIngestionService {
 
           if ( x % 50 == 0 ) {
             cleanUpGorm();
-            author_role = author_role.attach()
-            // author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
-            editor_role = editor_role.attach()
-            the_package = the_package.attach()
+            // author_role = Role.get(author_role.id);
+            // editor_role = Role.get(editor_role.id)
+            // the_package = Package.get(the_package.id);
           }
         }
         job?.setProgress( (x / kbart_beans.size()*100) as int)
@@ -756,7 +755,7 @@ class TSVIngestionService {
         }
 
         // reload in this session
-        result.attach()
+        // result = Package.get(result.id);
         break;
       case 1:
         //found a match
@@ -767,6 +766,8 @@ class TSVIngestionService {
         log.error("found multiple packages when looking for ${the_profile.packageName}")
       break
     }
+
+    log.debug("handlePackage returns ${result}");
     result;
   }
 
