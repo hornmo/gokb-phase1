@@ -787,24 +787,35 @@ class TSVIngestionService {
     }
     log.debug("${col_positions}")
     String[] nl=csv.readNext()
+    int rownum = 0;
     while(nl!=null) {
       Map result=[:]
-      for (key in col_positions.keySet()) {
-        log.debug("Checking ${key}")
-        if ( key && key.length() > 0 ) {
-          //so, springer files seem to start with a dodgy character (int) 65279
-          if (((int)key.toCharArray()[0])==65279) {
-            def index=key.getAt(1..key.length()-1)
-            //if ( ( col_positions[key] ) && ( nl.length < col_positions[key] ) ) {
-              result[index]=nl[col_positions[key]]
-            //}
-          } else {
-            //if ( ( col_positions[key] ) && ( nl.length < col_positions[key] ) ) {
-              result[key]=nl[col_positions[key]]
-            //}
+      if ( nl.length > 0 ) {
+
+        for (key in col_positions.keySet()) {
+          log.debug("Checking \"${key}\" - key position is ${col_positions[key]}")
+          if ( key && key.length() > 0 ) {
+            //so, springer files seem to start with a dodgy character (int) 65279
+            if (((int)key.toCharArray()[0])==65279) {
+              def corrected_key=key.getAt(1..key.length()-1)
+              //if ( ( col_positions[key] ) && ( nl.length < col_positions[key] ) ) {
+                result[corrected_key]=nl[col_positions[key]]
+              //}
+            } else {
+              //if ( ( col_positions[key] ) && ( nl.length < col_positions[key] ) ) {
+                if ( col_positions[key]?:100 < nl.length ) {
+                  result[key]=nl[col_positions[key]]
+                }
+                else {
+                  log.error("Column references value not present in row ${rownum}");
+                }
+              //}
+            }
           }
         }
-
+      }
+      else {
+        log.warn("Possible malformed last row");
       }
 
       log.debug(result)
@@ -815,6 +826,7 @@ class TSVIngestionService {
 
       results<<new KBartRecord(result)
       nl=csv.readNext()
+      rownum++
     }
     log.debug(results)
     results
