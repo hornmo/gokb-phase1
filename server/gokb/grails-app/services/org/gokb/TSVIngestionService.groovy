@@ -7,6 +7,7 @@ import au.com.bytecode.opencsv.CSVReader
 import au.com.bytecode.opencsv.bean.CsvToBean
 import au.com.bytecode.opencsv.bean.HeaderColumnNameMappingStrategy
 import au.com.bytecode.opencsv.bean.HeaderColumnNameTranslateMappingStrategy
+import java.text.SimpleDateFormat
 
 import com.k_int.ConcurrencyManagerService;
 import com.k_int.ConcurrencyManagerService.Job
@@ -622,22 +623,6 @@ class TSVIngestionService {
     log.debug("save title")
     title.save()
 
-  }
-
-  Date parseDate(String datestr) {
-    // Parse the date.
-    Date the_date = null
-    if (datestr) {
-      log.debug ("Trying to parse date from ${datestr}")
-      try {
-        the_date = ISODateParser.parseDateTime(datestr).toDate()
-      } catch (Throwable t) {
-        log.debug ("Error parsing date. '${datestr}' resulted in null date.")
-        // Ensure null date.
-        the_date = null
-      }
-    }
-    the_date
   }
 
   Date parseDate(String datestr) {
