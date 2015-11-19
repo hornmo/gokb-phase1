@@ -496,23 +496,33 @@ class TSVIngestionService {
         kbart_beans = getKbartBeansFromKBartFile(datafile)
       }
 
-      def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
-      def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
+      def author_role = null;
+      def editor_role = null;
 
       def the_package=handlePackage(the_profile)
 
       assert the_package != null
 
-      log.debug("Ingesting ${kbart_beans.size} rows")
+      log.debug("Ingesting ${kbart_beans.size} rows. Package is ${the_package}")
       //now its converted, ingest it into the database.
       for (int x=0; x<kbart_beans.size;x++) {
         log.debug("Ingesting ${x} of ${kbart_beans.size}")
         TitleInstance.withNewTransaction {
+
+          if ( author_role == null ) 
+            author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
+
+          if ( editor_role == null )
+            editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
+         
           writeToDB(kbart_beans[x], the_profile, datafile, ingest_date, ingest_systime, author_role, editor_role, the_package )
+
           if ( x % 50 == 0 ) {
             cleanUpGorm();
-            author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
-            editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
+            author_role = author_role.attach()
+            // author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
+            editor_role = editor_role.attach()
+            the_package = the_package.attach()
           }
         }
         job?.setProgress( (x / kbart_beans.size()*100) as int)
@@ -559,10 +569,12 @@ class TSVIngestionService {
 
   //this method does a lot of checking, and then tries to save the title to the DB.
   def writeToDB(the_kbart, the_profile, the_datafile, ingest_date, ingest_systime, author_role, editor_role, the_package) {
+
     //simplest method is to assume that everything is new.
     //however the golden rule is to check that something already exists and then
     //re-use it.
     log.debug("TSVINgestionService:writeToDB")
+
     //first we need a platform:
     URL platform_url=new URL(the_kbart.title_url?:the_profile.platformUrl)
     def platform = handlePlatform(platform_url.host, the_profile.source)
@@ -730,16 +742,21 @@ class TSVIngestionService {
     def packages=Package.findAllByNameIlike(the_profile.packageName);
     switch (packages.size()) {
       case 0:
-        //no match. create a new platform!
+        //no match. create a new package!
         log.debug("Create new package");
-        result = new Package(name:the_profile.packageName, source:the_profile.source)
-        if (result.save(flush:true, failOnError:true)) {
-          log.debug("saved new package: ${result}")
-        } else {
-          for (error in result.errors) {
-            log.error(error);
+        Package.withNewTransaction {
+          result = new Package(name:the_profile.packageName, source:the_profile.source)
+          if (result.save(flush:true, failOnError:true)) {
+            log.debug("saved new package: ${result}")
+          } else {
+            for (error in result.errors) {
+              log.error(error);
+            }
           }
         }
+
+        // reload in this session
+        result.attach()
         break;
       case 1:
         //found a match
