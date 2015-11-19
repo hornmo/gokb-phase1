@@ -793,7 +793,7 @@ class TSVIngestionService {
     int rownum = 0;
     while(nl!=null) {
       Map result=[:]
-      if ( nl.length > ) {
+      if ( nl.length > 0 ) {
 
         for (key in col_positions.keySet()) {
           log.debug("Checking \"${key}\" - key position is ${col_positions[key]}")
