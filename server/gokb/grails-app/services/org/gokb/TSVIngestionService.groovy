@@ -485,12 +485,16 @@ class TSVIngestionService {
       def author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
       def editor_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.editorRole)
 
+      def the_package=handlePackage(the_profile)
+
+      assert the_package != null
+
       log.debug("Ingesting ${kbart_beans.size} rows")
       //now its converted, ingest it into the database.
       for (int x=0; x<kbart_beans.size;x++) {
         log.debug("Ingesting ${x} of ${kbart_beans.size}")
         TitleInstance.withNewTransaction {
-          writeToDB(kbart_beans[x], the_profile, datafile, ingest_date, ingest_systime, author_role, editor_role )
+          writeToDB(kbart_beans[x], the_profile, datafile, ingest_date, ingest_systime, author_role, editor_role, the_package )
           if ( x % 50 == 0 ) {
             cleanUpGorm();
             author_role = RefdataCategory.lookupOrCreate(grailsApplication.config.kbart2.personCategory, grailsApplication.config.kbart2.authorRole)
@@ -501,7 +505,6 @@ class TSVIngestionService {
       }
 
       // the_profile.save(flush:true)
-      def the_package=handlePackage(the_profile)
 
       log.debug("Expunging old tipps [Tipps belonging to ${the_package} last seen prior to ${ingest_date}] - ${the_profile.packageName}");
 
@@ -541,7 +544,7 @@ class TSVIngestionService {
   }
 
   //this method does a lot of checking, and then tries to save the title to the DB.
-  def writeToDB(the_kbart, the_profile, the_datafile, ingest_date, ingest_systime, author_role, editor_role) {
+  def writeToDB(the_kbart, the_profile, the_datafile, ingest_date, ingest_systime, author_role, editor_role, the_package) {
     //simplest method is to assume that everything is new.
     //however the golden rule is to check that something already exists and then
     //re-use it.
@@ -551,10 +554,6 @@ class TSVIngestionService {
     def platform = handlePlatform(platform_url.host, the_profile.source)
 
     if (platform!=null) {
-
-      def the_package=handlePackage(the_profile)
-
-      if (the_package!=null) {
 
         log.debug(the_kbart.online_identifier)
 
@@ -591,9 +590,6 @@ class TSVIngestionService {
           log.debug("Skipping row - no identifiers")
         }
 
-      } else {
-      log.warn("couldn't reslove package - title not added.");
-      }
     } else {
       log.warn("couldn't reslove platform - title not added.");
     }
@@ -721,6 +717,7 @@ class TSVIngestionService {
     switch (packages.size()) {
       case 0:
         //no match. create a new platform!
+        log.debug("Create new package");
         result = new Package(name:the_profile.packageName, source:the_profile.source)
         if (result.save(flush:true, failOnError:true)) {
           log.debug("saved new package: ${result}")
