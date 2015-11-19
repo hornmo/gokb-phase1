@@ -138,10 +138,10 @@ class TSVIngestionService {
     result
   }
 
-  def find (String title, def identifiers, def user = null, def project = null) {
+  def lookupOrCreateTitle (String title, def identifiers, def user = null, def project = null) {
     // The TitleInstance
     BookInstance the_title = null
-    log.debug("${title}")
+    log.debug("lookup or create title :: ${title}")
     if (title == null) return null
     // Create the normalised title.
     String norm_title = GOKbTextUtils.generateComparableKey(title)
@@ -562,9 +562,10 @@ class TSVIngestionService {
         the_kbart.additional_isbns.each { identifier ->
           identifiers << [type: 'isbn', value:identifier]
         }
+
         if ( identifiers.size() > 0 ) {
           log.debug("looking for book using these identifiers: ${identifiers}")
-          def title = find(the_kbart.publication_title, identifiers)
+          def title = lookupOrCreateTitle(the_kbart.publication_title, identifiers)
           title.source=the_profile.source
           log.debug("title found: for ${the_kbart.publication_title}:${title}")
 
@@ -627,13 +628,13 @@ class TSVIngestionService {
   }
 
   def createTIPP(the_source,
-                   the_datafile,
-                   the_kbart,
-                   the_package,
-                   the_title,
-                   the_platform,
-                   ingest_date,
-                   ingest_systime) {
+                 the_datafile,
+                 the_kbart,
+                 the_package,
+                 the_title,
+                 the_platform,
+                 ingest_date,
+                 ingest_systime) {
 
     log.debug("TSVIngestionService::createTIPP with ${the_package}, ${the_title}, ${the_platform}, ${ingest_date}")
 
@@ -803,11 +804,11 @@ class TSVIngestionService {
               //}
             } else {
               //if ( ( col_positions[key] ) && ( nl.length < col_positions[key] ) ) {
-                if ( col_positions[key]?:100 < nl.length ) {
+                if ( ( col_positions[key] != null ) && ( col_positions[key] < nl.length ) ) {
                   result[key]=nl[col_positions[key]]
                 }
                 else {
-                  log.error("Column references value not present in row ${rownum}");
+                  log.error("Column references value not present in col ${col_positions[key]} row ${rownum}");
                 }
               //}
             }
