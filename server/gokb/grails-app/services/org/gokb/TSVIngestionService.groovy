@@ -44,6 +44,16 @@ class TSVIngestionService {
   def sessionFactory
   def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
 
+  def possible_date_formats = [
+    new SimpleDateFormat('yyyy-MM-dd'), // Default format Owen is pushing ATM.
+    new SimpleDateFormat('yyyy/MM/dd'),
+    new SimpleDateFormat('dd/MM/yyyy'),
+    new SimpleDateFormat('dd/MM/yy'),
+    new SimpleDateFormat('yyyy/MM'),
+    new SimpleDateFormat('yyyy')
+  ];
+
+
 
   /* This class is a BIG rip off of the TitleLookupService, it really should be
    * refactored to use inheritance of something!
@@ -155,37 +165,37 @@ class TSVIngestionService {
       log.debug ("Title class one identifier lookup yielded no matches.")
       // Check for presence of class one ID
       if (results['class_one']) {
-      log.debug ("One or more class 1 IDs supplied so must be a new TI.")
-      // Create the new TI.
-      the_title = new BookInstance(name:title)
-      } else {
-      // No class 1s supplied we should try and find a match on the title string.
-      log.debug ("No class 1 ids supplied.")
-      // Lookup using title string match only.
-      the_title = attemptStringMatch (norm_title)
-      if (the_title) {
-        log.debug("TI ${the_title} matched by name. Partial match")
-        // Add the variant.
-        the_title.addVariantTitle(title)
-        // Raise a review request
-        ReviewRequest.raise(
-          the_title,
-          "'${title}' added as a variant of '${the_title.name}'.",
-          "No 1st class ID supplied but reasonable match was made on the title name.",
-          user, project
-          )
-      } else {
-        log.debug("No TI could be matched by name. New TI, flag for review.")
-        // Could not match on title either.
-        // Create a new TI but attach a Review request to it.
+        log.debug ("One or more class 1 IDs supplied so must be a new TI.")
+        // Create the new TI.
         the_title = new BookInstance(name:title)
-        ReviewRequest.raise(
-          the_title,
-          "New TI created.",
-          "No 1st class ID supplied and no match could be made on title name.",
-          user, project
+      } else {
+        // No class 1s supplied we should try and find a match on the title string.
+        log.debug ("No class 1 ids supplied.")
+        // Lookup using title string match only.
+        the_title = attemptStringMatch (norm_title)
+        if (the_title) {
+          log.debug("TI ${the_title} matched by name. Partial match")
+          // Add the variant.
+          the_title.addVariantTitle(title)
+          // Raise a review request
+          ReviewRequest.raise(
+            the_title,
+            "'${title}' added as a variant of '${the_title.name}'.",
+            "No 1st class ID supplied but reasonable match was made on the title name.",
+            user, project
+            )
+        } else {
+          log.debug("No TI could be matched by name. New TI, flag for review.")
+          // Could not match on title either.
+          // Create a new TI but attach a Review request to it.
+          the_title = new BookInstance(name:title)
+          ReviewRequest.raise(
+            the_title,
+            "New TI created.",
+            "No 1st class ID supplied and no match could be made on title name.",
+            user, project
           )
-      }
+        }
       }
       break;
     case 1 :
@@ -225,14 +235,17 @@ class TSVIngestionService {
     log.debug(the_title.getIds())
     // Try and save the result now.
     if ( the_title.save(failOnError:true, flush:true) ) {
-      log.debug("Succesfully saved TI: ${the_title.name} (This may not change the db)")
+      log.debug("Succesfully saved TI: ${the_title.name} ${the_title.id} (This may not change the db)")
     }
     else {
+      log.error("**PROBLEM SAVING TITLE**");
       the_title.errors.each { e ->
-      log.error("Problem saving title: ${e}");
+        log.error("Problem saving title: ${e}");
       }
     }
     }
+
+    log.debug("lookupOrCreateTitle(${title}.....) returning ${the_title?.id}");
     the_title
   }
 
@@ -616,16 +629,31 @@ class TSVIngestionService {
     Date the_date = null
     if (datestr) {
       log.debug ("Trying to parse date from ${datestr}")
-            try {
-      the_date = ISODateParser.parseDateTime(datestr).toDate()
+      try {
+        the_date = ISODateParser.parseDateTime(datestr).toDate()
       } catch (Throwable t) {
         log.debug ("Error parsing date. '${datestr}' resulted in null date.")
         // Ensure null date.
-      the_date = null
+        the_date = null
       }
     }
     the_date
   }
+
+  Date parseDate(String datestr) {
+    def parsed_date = null;
+    if ( datestr && ( datestr.length() > 0 ) ) {
+      for(Iterator<SimpleDateFormat> i = possible_date_formats.iterator(); ( i.hasNext() && ( parsed_date == null ) ); ) {
+        try {
+          parsed_date = i.next().parse(datestr.replaceAll('-','/'));
+        }
+        catch ( Exception e ) {
+        }
+      }
+    }
+    parsed_date
+  }
+
 
   def createTIPP(the_source,
                  the_datafile,
