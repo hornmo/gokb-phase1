@@ -661,7 +661,6 @@ abstract class KBComponent {
     return combos
   }
 
-  @Override
   @Transient
   public String getDerivedName() {
     return name;
