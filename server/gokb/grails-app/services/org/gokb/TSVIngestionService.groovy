@@ -954,6 +954,4 @@ class TSVIngestionService {
     // Clear the property instance map.
     propertyInstanceMap.get().clear()
   }
-
-
 }
