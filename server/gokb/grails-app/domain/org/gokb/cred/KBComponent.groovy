@@ -137,7 +137,7 @@ abstract class KBComponent {
                 )
           } catch (MissingPropertyException e) {
             // Catch the error and just set to null.
-            log.error("MissingPropertyExceptiono - clearing out classMap",e);
+            log.debug("MissingPropertyExceptiono - clearing out classMap",e);
 
             classMap = null
           }
