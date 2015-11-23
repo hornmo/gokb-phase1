@@ -354,7 +354,6 @@ abstract class KBComponent {
     status    (nullable:true, blank:false)
     editStatus  (nullable:true, blank:false)
     source (nullable:true, blank:false)
-    lastSeen (nullable:true, blank:false)
   }
 
   /**
@@ -1061,6 +1060,6 @@ abstract class KBComponent {
 
   @Transient
   def getNotes() {
-    return Notes.findAllByOwnerClassAndOwnerId(this.class.name, this.getId())
+    return Note.findAllByOwnerClassAndOwnerId(this.class.name, this.getId())
   }
 }
