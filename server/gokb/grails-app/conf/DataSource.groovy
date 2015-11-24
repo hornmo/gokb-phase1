@@ -42,8 +42,8 @@ environments {
           password = "k-int"
           url = "jdbc:postgresql://localhost:5432/GOKb"
           pooled = true
-          formatSql=true
-          logSql=true
+//          formatSql=true
+//          logSql=true
           properties {
               maxActive = 500
               minEvictableIdleTimeMillis=1800000
