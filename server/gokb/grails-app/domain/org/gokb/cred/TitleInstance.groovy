@@ -10,18 +10,18 @@ class TitleInstance extends KBComponent {
 
 
   // title is now NAME in the base component class...
-  RefdataValue	medium
-  RefdataValue	pureOA
-  RefdataValue	continuingSeries
-  RefdataValue	reasonRetired
-  RefdataValue	OAStatus
+  RefdataValue  medium
+  RefdataValue  pureOA
+  RefdataValue  continuingSeries
+  RefdataValue  reasonRetired
+  RefdataValue  OAStatus
   Date publishedFrom
   Date publishedTo
 //  String imprint
 
   private static refdataDefaults = [
-    "medium"		: "Journal",
-    "pureOA"		: "No",
+    "medium"    : "Journal",
+    "pureOA"    : "No",
     "OAStatus"  : "Unknown"
   ]
 
@@ -45,10 +45,10 @@ class TitleInstance extends KBComponent {
       if (!existing) {
         addToVariantNames(
             new KBComponentVariantName([
-              "variantType"	: (title_type),
-              "locale"		: (locale_rd),
-              "status"		: RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_CURRENT),
-              "variantName"	: (title)
+              "variantType" : (title_type),
+              "locale"    : (locale_rd),
+              "status"    : RefdataCategory.lookupOrCreate('KBComponentVariantName.Status', KBComponent.STATUS_CURRENT),
+              "variantName" : (title)
             ])
             )
       } else {
@@ -61,13 +61,13 @@ class TitleInstance extends KBComponent {
   }
 
   static hasByCombo = [
-    issuer		: Org,
-    translatedFrom	: TitleInstance,
-    absorbedBy		: TitleInstance,
-    mergedWith		: TitleInstance,
-    renamedTo		: TitleInstance,
-    splitFrom		: TitleInstance,
-    imprint		: Imprint
+    issuer    : Org,
+    translatedFrom  : TitleInstance,
+    absorbedBy    : TitleInstance,
+    mergedWith    : TitleInstance,
+    renamedTo   : TitleInstance,
+    splitFrom   : TitleInstance,
+    imprint   : Imprint
   ]
 
   static manyByCombo = [

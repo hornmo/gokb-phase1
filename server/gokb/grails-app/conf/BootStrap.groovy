@@ -39,12 +39,12 @@ class BootStrap {
   def init = { servletContext ->
 
     log.info("Init")
-    
+
     cleanUpMissingDomains ()
-    
+
     // Add our custom metaclass methods for all KBComponents.
     alterDefaultMetaclass()
-    
+
     // Add Custom APIs.
     addCustomApis()
 
@@ -61,6 +61,7 @@ class BootStrap {
     def apiRole = Role.findByAuthority('ROLE_API') ?: new Role(authority: 'ROLE_API', roleType:'global').save(failOnError: true)
     def suRole = Role.findByAuthority('ROLE_SUPERUSER') ?: new Role(authority: 'ROLE_SUPERUSER', roleType:'global').save(failOnError: true)
     def refineUserRole = Role.findByAuthority('ROLE_REFINEUSER') ?: new Role(authority: 'ROLE_REFINEUSER', roleType:'global').save(failOnError: true)
+    def refineTesterRole = Role.findByAuthority('ROLE_REFINETESTER') ?: new Role(authority: 'ROLE_REFINETESTER', roleType:'global').save(failOnError: true)
 
 
 
@@ -150,7 +151,7 @@ class BootStrap {
     }
 
     // Make sure admin user has all the system roles.
-    [contributorRole,userRole,editorRole,adminRole,apiRole,suRole].each { role ->
+    [contributorRole,userRole,editorRole,adminRole,apiRole,suRole,refineUserRole,refineTesterRole].each { role ->
       if (!adminUser.authorities.contains(role)) {
         UserRole.create adminUser, role
       }
@@ -214,12 +215,12 @@ class BootStrap {
 
     log.debug("Add validation rules");
     addValidationRules()
-    
+
     failAnyIngestingProjects()
 
     log.debug("Migrate disk files to database...");
     migrateDiskFilesToDatabase()
-    
+
     log.debug("Setting normalised titles for any components where it is null");
 
     KBComponent.executeQuery("select kbc.id from KBComponent as kbc where kbc.normname is null and kbc.name is not null").each { kbc_id ->
@@ -231,13 +232,13 @@ class BootStrap {
         kbc.discard()
       }
     }
-    
+
     log.debug("Setting default sort keys");
     defaultSortKeys ()
 
     log.debug("Boostrap::Init Done");
   }
-  
+
   def migrateDiskFilesToDatabase() {
     def baseUploadDir = grailsApplication.config.baseUploadDir ?: '.'
 
@@ -263,10 +264,10 @@ class BootStrap {
   }
 
   def cleanUpMissingDomains () {
-    
+
     def domains = KBDomainInfo.createCriteria().list { ilike ('dcName', 'org.gokb%') }.each { d ->
       try {
-        
+
         // Just try reading the class.
         Class.forName(d.dcName)
       } catch (ClassNotFoundException e) {
@@ -275,38 +276,38 @@ class BootStrap {
       }
     }
   }
-  
+
   def failAnyIngestingProjects() {
     log.debug("Failing any projects stuck on Ingesting on server start.");
     RefineProject.findAllByProjectStatus (RefineProject.Status.INGESTING)?.each {
-      
+
       it.setProjectStatus(RefineProject.Status.INGEST_FAILED)
       it.save(flush:true)
     }
     log.debug("failAnyIngestingProjects completed");
   }
 
-  
+
   private void addCustomApis() {
-    
+
     log.debug("Extend Domain classes.")
     (grailsApplication.getArtefacts("Domain")*.clazz).each {Class<?> c ->
-      
+
       // SO: Changed this to use the APIs 'applicableFor' method that is used to check whether,
       // to add to the class or not. This defaults to "true". Have overriden on the GrailsDomainHelperApi utils
       // and moved the selective code there. This means that *ALL* domain classes will still receive the methods in the
       // SecurityApi.
       // II: has this caused projects under org.gokb.refine to no longer be visible? Not sure how to fix it.
-      
+
       log.debug("Considering ${c}")
-      grailsApplication.config.apiClasses.each { String className -> 
+      grailsApplication.config.apiClasses.each { String className ->
         // log.debug("Adding methods to ${c.name} from ${className}");
         // Add the api methods.
         A_Api.addMethods(c, Class.forName(className))
       }
     }
   }
-  
+
   def registerDomainClasses() {
 
     def std_domain_type = RefdataCategory.lookupOrCreate('DCType', 'Standard').save()
@@ -372,19 +373,19 @@ class BootStrap {
       }
     }
   }
-  
+
   def defaultSortKeys () {
     def vals = RefdataValue.executeQuery("select o from RefdataValue o where o.sortKey is null or trim(o.sortKey) = ''")
-    
+
     // Default the sort key to 0.
     vals.each {
       it.sortKey = "0"
       it.save()
     }
-    
+
     // Now we should also do the same for the Domain objects.
     vals = KBDomainInfo.executeQuery("select o from KBDomainInfo o where o.dcSortOrder is null or trim(o.dcSortOrder) = ''")
-    
+
     // Default the sort key to 0.
     vals.each {
       it.dcSortOrder = "0"
@@ -799,7 +800,7 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('ReviewRequest.Status', 'Deleted').save()
 
     RefdataCategory.lookupOrCreate('ReviewRequest.StdDesc', 'RR Standard Desc 1').save()
-    
+
 
     RefdataCategory.lookupOrCreate('Activity.Status', 'Active').save()
     RefdataCategory.lookupOrCreate('Activity.Status', 'Complete').save()
@@ -828,6 +829,17 @@ class BootStrap {
     RefdataCategory.lookupOrCreate('RDFDataType', 'uri').save()
     RefdataCategory.lookupOrCreate('RDFDataType', 'string').save()
 
+    RefdataCategory.lookupOrCreate('ingest.filetype','kbart2').save()
+    RefdataCategory.lookupOrCreate('ingest.filetype','ingram').save()
+    RefdataCategory.lookupOrCreate('ingest.filetype','ybp').save()
+    RefdataCategory.lookupOrCreate('ingest.filetype','cufts').save()
+
+    RefdataCategory.lookupOrCreate('Platform.Authentication','Unknown').save()
+
+    RefdataCategory.lookupOrCreate('Platform.Roles','Host').save()
+
+    RefdataCategory.lookupOrCreate('Combo.Type','KBComponent.Ids').save()
+    
     RefdataCategory.lookupOrCreate('RAG', 'Unknown').save()
     RefdataCategory.lookupOrCreate('RAG', 'Red').save()
     RefdataCategory.lookupOrCreate('RAG', 'Amber').save()

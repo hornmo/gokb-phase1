@@ -10,37 +10,37 @@ public class HQLBuilder {
   /**
    *  Accept a qbetemplate of the form
    *  [
-   *		baseclass:'Fully.Qualified.Class.Name.To.Search',
-   *		title:'Title Of Search',
-   *		qbeConfig:[
-   *			// For querying over associations and joins, here we will need to set up scopes to be referenced in the qbeForm config
-   *			// Until we need them tho, they are omitted. qbeForm entries with no explicit scope are at the root object.
-   *			qbeForm:[
-   *				[
-   *					prompt:'Name or Title',
-   *					qparam:'qp_name',
-   *					placeholder:'Name or title of item',
-   *					contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
-   *				],
-   *				[
-   *					prompt:'ID',
-   *					qparam:'qp_id',
-   *					placeholder:'ID of item',
-   *					contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'id', 'type' : 'java.lang.Long']
-   *				],
-   *				[
-   *					prompt:'SID',
-   *					qparam:'qp_sid',
-   *					placeholder:'SID for item',
-   *					contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'ids.value']
-   *				],
-   *			],
-   *			qbeResults:[
-   *				[heading:'Type', property:'class.simpleName'],
-   *				[heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
-   *			]
-   *		]
-   *	]
+   *    baseclass:'Fully.Qualified.Class.Name.To.Search',
+   *    title:'Title Of Search',
+   *    qbeConfig:[
+   *      // For querying over associations and joins, here we will need to set up scopes to be referenced in the qbeForm config
+   *      // Until we need them tho, they are omitted. qbeForm entries with no explicit scope are at the root object.
+   *      qbeForm:[
+   *        [
+   *          prompt:'Name or Title',
+   *          qparam:'qp_name',
+   *          placeholder:'Name or title of item',
+   *          contextTree:['ctxtp':'qry', 'comparator' : 'ilike', 'prop':'name']
+   *        ],
+   *        [
+   *          prompt:'ID',
+   *          qparam:'qp_id',
+   *          placeholder:'ID of item',
+   *          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'id', 'type' : 'java.lang.Long']
+   *        ],
+   *        [
+   *          prompt:'SID',
+   *          qparam:'qp_sid',
+   *          placeholder:'SID for item',
+   *          contextTree:['ctxtp':'qry', 'comparator' : 'eq', 'prop':'ids.value']
+   *        ],
+   *      ],
+   *      qbeResults:[
+   *        [heading:'Type', property:'class.simpleName'],
+   *        [heading:'Name/Title', property:'name', link:[controller:'resource',action:'show',id:'x.r.class.name+\':\'+x.r.id'] ]
+   *      ]
+   *    ]
+   *  ]
    *
    *
    */

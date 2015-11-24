@@ -36,7 +36,7 @@ class DataFile extends KBComponent {
   }
   
   static hasByCombo = [
-	  profile: IngestionProfile
+    profile: IngestionProfile
   ]
   
   static manyByCombo = [

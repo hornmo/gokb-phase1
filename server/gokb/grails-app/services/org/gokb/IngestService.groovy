@@ -124,8 +124,8 @@ class IngestService {
     long existingTitles  = 0
     long newPkgs         = 0
     long existingPlats   = 0
-    long newPubs		     = 0
-    long existingPubs	   = 0
+    long newPubs         = 0
+    long existingPubs    = 0
 
     // Read in the column positions, and supplied Identifiers
     CaseInsensitiveMap col_positions = [:]
@@ -178,9 +178,9 @@ class IngestService {
     }
 
     // Create the sets for processing after run through.
-    Set platformNames   	= []
-    Set packageIdentifiers 	= []
-    Set publisher_orgs		= []
+    Set platformNames     = []
+    Set packageIdentifiers  = []
+    Set publisher_orgs    = []
 
     log.debug("Finding existing titles...");
     
@@ -198,13 +198,13 @@ class IngestService {
           if ( getRowValue(datarow,col_positions,PUBLICATION_TITLE) ) {
 
             def host_platform_name = getRowValue(datarow,col_positions,HOST_PLATFORM_NAME)
-            //			def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
+            //      def host_norm_platform_name = host_platform_name ? host_platform_name.toLowerCase().trim() : null;
 
             // Just add the normname to the platforms list.
             platformNames << host_platform_name
 
             // Package ID
-            def pkg_id	= getRowValue(datarow,col_positions,PACKAGE_NAME, recon_data)
+            def pkg_id  = getRowValue(datarow,col_positions,PACKAGE_NAME, recon_data)
             pkg_id = pkg_id?.trim()
             if (!pkg_id || pkg_id == "") {
               pkg_id = default_pkg_identifier
@@ -941,6 +941,40 @@ class IngestService {
     
     bis.close()
   }
+  
+  def processReconData(result, is) {
+    log.debug("processing refine pool.txt");
+    def bis = new BufferedReader(new InputStreamReader(is));
+    
+    // First line is the refine version
+    String refineVersion = bis.readLine()
+    
+    if (result.refineVersion == refineVersion) {
+      log.debug("Reported refine version matches data (${refineVersion}).")
+    } else {
+      log.debug("Differeing refine version (Data: ${result.refineVersion} / Recon $refineVersion}).")
+    }
+    
+    // Header info
+    result.reconCount=Integer.decode(valuePart(bis.readLine()))
+    log.debug ("Found ${result.reconCount} recon entries")
+    
+    // Our recon map.
+    result.recon = [:]
+    
+    for (int i=0; i<result.reconCount; i++) {
+      def jsonSlurper = new JsonSlurper()
+      def jso = jsonSlurper.parseText(bis.readLine())
+      
+      result.recon["${jso['id']}"] = jso
+    }
+    
+    if (bis.readLine() != null) {
+      log.debug("Reported recon count not correct.")
+    }
+    
+    bis.close()
+  }
 
   def processData(result, is) {
     log.debug("processing refine data.txt");
@@ -1073,16 +1107,16 @@ class IngestService {
 
     the_date
 
-    //	def parsed_date = null;
-    //	if ( datestr && ( datestr.length() > 0 ) )
-    //	  for(Iterator<SimpleDateFormat> i = possible_date_formats.iterator(); ( i.hasNext() && ( parsed_date == null ) ); ) {
-    //		try {
-    //		  parsed_date = i.next().parse(datestr.replaceAll('-','/'));
-    //		}
-    //		catch ( Exception e ) {
-    //		}
-    //	  }
-    //	parsed_date
+    //  def parsed_date = null;
+    //  if ( datestr && ( datestr.length() > 0 ) )
+    //    for(Iterator<SimpleDateFormat> i = possible_date_formats.iterator(); ( i.hasNext() && ( parsed_date == null ) ); ) {
+    //    try {
+    //      parsed_date = i.next().parse(datestr.replaceAll('-','/'));
+    //    }
+    //    catch ( Exception e ) {
+    //    }
+    //    }
+    //  parsed_date
   }
 
   def extractRules(parsed_data, project) {

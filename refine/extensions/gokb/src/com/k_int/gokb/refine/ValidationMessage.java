@@ -71,3 +71,4 @@ public class ValidationMessage extends Notification {
     this.type = type;
   }
 }
+

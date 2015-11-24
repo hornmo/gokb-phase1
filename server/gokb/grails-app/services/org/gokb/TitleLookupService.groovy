@@ -23,7 +23,7 @@ class TitleLookupService {
     // list of matches
     def result = [
       "class_one"         : false,
-      "ids"			          : [],
+      "ids"               : [],
       "matches"           : [] as Set,
       "x_check_matches"   : [] as Set
     ]
@@ -35,7 +35,7 @@ class TitleLookupService {
 
         // id_def is map with keys 'type' and 'value'
         Identifier the_id = Identifier.lookupOrCreateCanonicalIdentifier(id_def.type, id_def.value)
-
+ 
         // Add the id.
         result['ids'] << the_id
 

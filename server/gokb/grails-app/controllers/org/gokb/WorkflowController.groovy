@@ -1249,11 +1249,11 @@ class WorkflowController {
           // As per spec header at top of file / section
           writer.write("GOKb Export : ${pkg.provider?.name} : ${pkg.name} : ${export_date}\n");
 
-          writer.write('TIPP ID	TIPP URL	Title ID	Title	TIPP Status	[TI] Publisher	[TI] Imprint	[TI] Published From	[TI] Published to	[TI] Medium	[TI] OA Status	'+
-                     '[TI] Continuing series	[TI] ISSN	[TI] EISSN	Package	Package ID	Package URL	Platform	'+
-                     'Platform URL	Platform ID	Reference	Edit Status	Access Start Date	Access End Date	Coverage Start Date	'+
-                     'Coverage Start Volume	Coverage Start Issue	Coverage End Date	Coverage End Volume	Coverage End Issue	'+
-                     'Embargo	Coverage note	Host Platform URL	Format	Payment Type\n');
+          writer.write('TIPP ID TIPP URL  Title ID  Title TIPP Status [TI] Publisher  [TI] Imprint  [TI] Published From [TI] Published to [TI] Medium [TI] OA Status  '+
+                     '[TI] Continuing series  [TI] ISSN [TI] EISSN  Package Package ID  Package URL Platform  '+
+                     'Platform URL  Platform ID Reference Edit Status Access Start Date Access End Date Coverage Start Date '+
+                     'Coverage Start Volume Coverage Start Issue  Coverage End Date Coverage End Volume Coverage End Issue  '+
+                     'Embargo Coverage note Host Platform URL Format  Payment Type\n');
 
           def tipps = TitleInstancePackagePlatform.executeQuery(
                          'select tipp.id from TitleInstancePackagePlatform as tipp, Combo as c where c.fromComponent=? and c.toComponent=tipp  and tipp.status.value <> ? and c.type.value = ? order by tipp.id',

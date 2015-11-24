@@ -26,7 +26,23 @@ window.gokb = {
   "config" : {
     "lookupURI" : "/gokbLabs/ajaxSupport/lookup",
     "baseUrl" : "/gokbLabs",
-  }
+  },
+  validateJson : function (value) {
+    
+    if (value && value != "") {
+      try {
+        // Access the clipboard using the api
+//        var pastedData = e.originalEvent.clipboardData.getData('text');
+        
+        var data = $.parseJSON ( value );
+        
+        data = JSON.stringify(data, null, "  ");
+        return data;
+      } catch (e) {
+        return false;
+      }
+    }
+  } 
 };
 
 (function($) {
@@ -120,7 +136,7 @@ window.gokb = {
     // If we have error messages then let's display them in a modal.
     var messages = $('#msg');
     if (messages.children().length > 0) {
-      bootbox.alert("<h2 class='text-error' >Error</h2>" + messages.html());
+      bootbox.alert("<h2 class='text-danger' >Error</h2>" + messages.html());
     }
     
     $('#modal').on('show.bs.modal', function () {
@@ -141,6 +157,14 @@ window.gokb = {
     $.fn.editable.defaults.onblur = 'ignore';
     
     $('.xEditableValue').editable();
+    
+    // Add the client-side validation to test for valid json.
+    $('.refine-transform .xEditableValue').editable('option', 'validate', function(value){
+      if ( gokb.validateJson( value ) == false ) {
+        return "The JSON is incorrectly formatted.";
+      }
+    });
+    
     $(".xEditableManyToOne").editable();
     
     
@@ -308,15 +332,11 @@ window.gokb = {
       e.preventDefault();
       e.stopImmediatePropagation();
       
-      try {
-        // Access the clipboard using the api
-        var pastedData = e.originalEvent.clipboardData.getData('text');
-        
-        var data = $.parseJSON ( pastedData );
-        
-        $(e.target)[0].value = JSON.stringify(data, null, "  ");
-      } catch (e) {
-        alert ("The JSON you are attempting to paste is incorrectly formatted. Please ensure you copy everything from the source.")
+      data = gokb.validateJson( e.originalEvent.clipboardData.getData('text') );
+      if (data == false) {
+        bootbox.alert("<h2 class='text-danger' >Error</h2>" +
+          '<p>The JSON you are attempting to paste is incorrectly formatted. Please ensure you copy everything from the source.</p>'
+        );
       }
     });
     
