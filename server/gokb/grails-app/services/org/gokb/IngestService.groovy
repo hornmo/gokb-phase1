@@ -941,40 +941,6 @@ class IngestService {
     
     bis.close()
   }
-  
-  def processReconData(result, is) {
-    log.debug("processing refine pool.txt");
-    def bis = new BufferedReader(new InputStreamReader(is));
-    
-    // First line is the refine version
-    String refineVersion = bis.readLine()
-    
-    if (result.refineVersion == refineVersion) {
-      log.debug("Reported refine version matches data (${refineVersion}).")
-    } else {
-      log.debug("Differeing refine version (Data: ${result.refineVersion} / Recon $refineVersion}).")
-    }
-    
-    // Header info
-    result.reconCount=Integer.decode(valuePart(bis.readLine()))
-    log.debug ("Found ${result.reconCount} recon entries")
-    
-    // Our recon map.
-    result.recon = [:]
-    
-    for (int i=0; i<result.reconCount; i++) {
-      def jsonSlurper = new JsonSlurper()
-      def jso = jsonSlurper.parseText(bis.readLine())
-      
-      result.recon["${jso['id']}"] = jso
-    }
-    
-    if (bis.readLine() != null) {
-      log.debug("Reported recon count not correct.")
-    }
-    
-    bis.close()
-  }
 
   def processData(result, is) {
     log.debug("processing refine data.txt");
