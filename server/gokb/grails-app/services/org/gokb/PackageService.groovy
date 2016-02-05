@@ -5,6 +5,7 @@ import org.hibernate.Session
 
 class PackageService {
 
+  /*
   public static String missingTIPs = '''
     select distinct title, platform
     from TitleInstancePackagePlatform as tipp, 
@@ -29,6 +30,7 @@ class PackageService {
                and tip_platform_combo.toComponent=platform
            )
 '''
+  */
 
   ComponentLookupService componentLookupService
   
