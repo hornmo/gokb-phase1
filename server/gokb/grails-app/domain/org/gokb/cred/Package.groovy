@@ -423,13 +423,20 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
     }
 
     if ( packageHeaderDTO.nominalProvider ) {
-      def prov = Org.findByName(packageHeaderDTO.nominalProvider)
+      def norm_prov_name = KBComponent.generateNormname(packageHeaderDTO.nominalProvider)
+
+      def prov = Org.findByNormname(norm_prov_name)
+      def candidate_orgs = Org.executeQuery("select o from Org as o join o.variantNames as v where v.normVariantName = ?",[norm_prov_name]);
       if ( prov ) {
         result.provider = prov;
         changed = true
       }
+      else if ( candidate_orgs.size() == 1 ) {
+        result.provider = candidate_orgs[0]
+        changed = true
+      }
       else {
-        log.warn("Unable to locate nominal provider ${packageHeaderDTO.nominalProvider}");
+        log.warn("Unable to locate provider ${packageHeaderDTO.nominalProvider}");
       }
     }
 
@@ -454,7 +461,7 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
         def cg = CuratoryGroup.findByName(it.curatoryGroup) ?: new CuratoryGroup(name:it.curatoryGroup).save(flush:true, failOnError:true)
 
         if ( cg ) {
-          if ( result.curatoryGroups.find(it.name == cg.name) ) {
+          if ( result.curatoryGroups.find {it.name == cg.name } ) {
           }
           else {
             result.curatoryGroups.add(cg)

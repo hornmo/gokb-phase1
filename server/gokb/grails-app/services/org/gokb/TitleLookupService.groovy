@@ -286,7 +286,7 @@ class TitleLookupService {
         if (results['x_check_matches'].size() == 1) {
           
           def data = results['x_check_matches'][0]
-          
+          log.debug("Identifier mismatch! ${data['suppliedNS']} matches existing ${data['foundNS']}");
           // Fire the review request.
           ReviewRequest.raise(
             matches[0],
@@ -345,9 +345,9 @@ class TitleLookupService {
       ids_to_add.addAll(results['other_identifiers'])
 
       ids_to_add.each {
-        if ( ! the_title.ids.contains(it) ) {
+        if ( !the_title.ids.contains(it) ) {
 
-          log.debug("Titles ${the_title.id} does not already contain identifier ${it.id}. See if adding it would create a conflict, if not, add it");
+          log.debug("Title ${the_title.id} (IDs: ${the_title.ids}) does not already contain identifier ${it.id}. See if adding it would create a conflict, if not, add it");
 
           // Double check the identifier we are about to add does not already exist attached to another item in the system
           // Combo.Type : KBComponent.Ids
@@ -370,6 +370,8 @@ class TitleLookupService {
             // the_title.ids.add(it);
             // the_title.save(flush:true, failOnError:true);
           }
+        }else{
+          log.debug("Identifier ${it.id} already present in identifier list: ${the_title.ids}");
         }
       }
 
