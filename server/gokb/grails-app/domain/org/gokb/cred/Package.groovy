@@ -222,9 +222,10 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
     
     builder.'gokb' (attr) {
       builder.'package' (['id':(id)]) {
+        addCoreGOKbXmlFields(builder, attr)
+        
         'scope' ( scope?.value )
         'listStatus' ( listStatus?.value )
-        'status' ( status?.value )
         'breakable' ( breakable?.value )
         'consistent' ( consistent?.value )
         'fixed' ( fixed?.value )
@@ -233,32 +234,15 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
         'nominalPlatform' ( nominalPlatform?.name )
         'nominalProvider' ( nominalPlatform?.provider?.name )
         'listVerifier' ( listVerifier?.username )
-        'listVerifierDate' ( listVerifiedDate ? sdf.format(listVerifiedDate) : null )
-        'source' {
-          'url' (source?.url)
-          'defaultAccessURL' (source?.defaultAccessURL)
-          'explanationAtSource' (source?.explanationAtSource)
-          'contextualNotes' (source?.contextualNotes)
-          'frequency' (source?.frequency)
-          'ruleset' (source?.ruleset)
-          'defaultSupplyMethod' (source?.defaultSupplyMethod?.value)
-          'defaultDataFormat' (source?.defaultSupplyMethod?.value)
-          'responsibleParty' (source?.responsibleParty?.name)
-        }
-        'name' (name)
-        if ( curatoryGroups ) {
-           builder.'curatoryGroups' {
-             curatoryGroups.each { cg ->
-               builder.'curatoryGroup' ( cg.name )
-             }
-           }
-        }
-        if ( variantNames ) {
-           builder.'variantNames' {
-             variantNames.each { vn ->
-               builder.'variantName' ( vn.variantName )
-             }
-           }
+        'userListVerifier' ( userListVerifier?.username )
+        'listVerifiedDate' ( listVerifiedDate ? sdf.format(listVerifiedDate) : null )
+
+        builder.curatoryGroups {
+          curatoryGroups.each { cg ->
+            builder.group {
+              builder.name(cg.name)
+            }
+          }
         }
         'dateCreated' (sdf.format(dateCreated))
         'TIPPs'(count:tipps?.size()) {
@@ -380,7 +364,6 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
    */
   @Transient
   public static Package upsertDTO(packageHeaderDTO) {
-    def sdf = new java.text.SimpleDateFormat("yyyy-MM-dd' 'HH:mm:ss.SSS");
     def result = null
     log.info("Upsert package with header ${packageHeaderDTO}");
     result = Package.findByName(packageHeaderDTO.name) ?: new Package(name:packageHeaderDTO.name).save(flush:true, failOnError:true);
@@ -398,7 +381,7 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
     changed |= ClassUtils.setRefdataIfPresent(packageHeaderDTO.global, result, 'global')
     changed |= ClassUtils.setStringIfDifferent(result, 'listVerifier', packageHeaderDTO.listVerifier?.toString())
     // User userListVerifier
-    changed |= ClassUtils.setDateIfPresent(packageHeaderDTO.listVerifiedDate, result, 'listVerifiedDate', sdf);
+    changed |= ClassUtils.setDateIfPresent(packageHeaderDTO.listVerifiedDate, result, 'listVerifiedDate');
 
     if ( packageHeaderDTO.userListVerifier ) {
       def looked_up_user = User.findByUsername(packageHeaderDTO.userListVerifier)
@@ -449,24 +432,22 @@ order by tipp.id""",[this, refdata_package_tipps, refdata_hosted_tipps, refdata_
     }
 
     packageHeaderDTO.variantNames?.each {
-      if ( it.variantName ) {
-        result.ensureVariantName(it.variantName)
-        changed=true;
-      }
+      result.ensureVariantName(it)
+      changed=true
     }
 
     packageHeaderDTO.curatoryGroups?.each {
-      if ( it.curatoryGroup ) {
 
-        def cg = CuratoryGroup.findByName(it.curatoryGroup) ?: new CuratoryGroup(name:it.curatoryGroup).save(flush:true, failOnError:true)
+      String normname = CuratoryGroup.generateNormname(it)
+      
+      def cg = CuratoryGroup.findByNormname(normname)
 
-        if ( cg ) {
-          if ( result.curatoryGroups.find {it.name == cg.name } ) {
-          }
-          else {
-            result.curatoryGroups.add(cg)
-            changed=true;
-          }
+      if ( cg ) {
+        if ( result.curatoryGroups.find {it.name == cg.name } ) {
+        }
+        else {
+          result.curatoryGroups.add(cg)
+          changed=true;
         }
       }
     }

@@ -992,19 +992,23 @@ abstract class KBComponent {
   }
 
   @Transient
-  def ensureVariantName(name) {
+  def ensureVariantName(String name) {
 
-    def normname = GOKbTextUtils.norm2(name)
+    def normname = generateNormname(name)
 
     // Check that name is not already a name or a variant, if so, add it.
     def existing_component = KBComponent.findByNormname( normname )
 
     if ( existing_component == null ) {
+      
+      // Variant names use different normalisation method.
+      normname = GOKbTextUtils.normaliseString(name)
+      
       // not already a name
       // Make sure not already a variant name
       def existing_variants = KBComponentVariantName.findAllByNormVariantName(normname)
       if ( existing_variants.size() == 0 ) {
-        KBComponentVariantName kvn = new KBComponentVariantName(owner:this, normVariantName:name, variantName:name ).save()
+        KBComponentVariantName kvn = new KBComponentVariantName( owner:this, variantName:name ).save()
       }
       else {
         log.error("Unable to add ${name} as an alternate name to ${id} - it's already an alternate name....");
@@ -1215,6 +1219,100 @@ abstract class KBComponent {
     ComponentSubject.executeUpdate("delete from ComponentSubject as c where c.component=:component",[component:this]);
     this.delete(flush:true, failOnError:true)
     result;
+  }
+
+  @Transient
+  def addCoreGOKbXmlFields(builder, attr) {
+    def cids = getIds() ?: []
+    String cName = this.class.name
+    
+    // Singel props.
+    builder.'name' (name)
+    builder.'status' (status?.value)
+    builder.'editStatus' (editStatus?.value)
+    builder.'shortcode' (shortcode)
+    
+    // Identifiers
+    builder.'identifiers' {
+      cids?.each { tid ->
+        builder.'identifier' ('namespace':tid?.namespace?.value, 'value':tid?.value)
+      }
+      if ( grailsApplication.config.serverUrl ) {
+        builder.'identifier' ('namespace':'originEditUrl', 'value':"${grailsApplication.config.serverUrl}/resource/show/${cName}:${id}")
+      }
+    }
+    
+    // Variant Names
+    if ( variantNames ) {
+      builder.'variantNames' {
+        variantNames.each { vn ->
+          builder.'variantName' ( vn.variantName )
+        }
+      }
+    }
+    
+    // Tags
+    if ( tags ) {
+      builder.'tags' {
+        tags.each { tag ->
+          builder.'tag' (tag.value)
+        }
+      }
+    }
+    
+    if (additionalProperties) {
+      builder.'additionalProperties' {
+        additionalProperties.each { prop ->
+          String pName = prop.propertyDefn?.propertyName
+          if (pName && prop.apValue) {
+            builder.'additionalProperty' ('name':pName, 'value':prop.apValue)
+          }
+        }
+      }
+    }
+    if (fileAttachments) {
+      builder.fileAttachments {
+        fileAttachments.each { fa ->
+          builder.fileAttachment {
+            builder.guid(fa.guid)
+            builder.md5(fa.md5)
+            builder.uploadName(fa.uploadName)
+            builder.uploadMimeType(fa.uploadMimeType)
+            builder.filesize(fa.filesize)
+            builder.doctype(fa.doctype)
+            builder.content {
+              builder.mkp.yieldUnescaped "<![CDATA[${fa.fileData.encodeBase64().toString()}]]>"
+            }
+          }
+        }
+      }
+    }
+    
+    if (source) {
+      
+      source.with {
+      
+        addCoreGOKbXmlFields(builder, attr)
+        
+        builder.'url' (url)
+        builder.'defaultAccessURL' (defaultAccessURL)
+        builder.'explanationAtSource' (explanationAtSource)
+        builder.'contextualNotes' (contextualNotes)
+        builder.'frequency' (frequency)
+        builder.'ruleset' (ruleset)
+        if ( defaultSupplyMethod ) {
+          builder.'defaultSupplyMethod' ( defaultSupplyMethod.value )
+        }
+        if ( defaultDataFormat ) {
+          builder.'defaultDataFormat' ( defaultDataFormat.value )
+        }
+        if ( responsibleParty ) {
+          builder.'responsibleParty' {
+            builder.name(responsibleParty.name)
+          }
+        }
+      }
+    }
   }
 
 }

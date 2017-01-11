@@ -672,27 +672,9 @@ class IntegrationController {
   }
   
   
-  private static addVariantNameToComponent (component, variant_name) {
+  private static addVariantNameToComponent (KBComponent component, variant_name) {
     
-    def result = [:]
-    
-    // Double check that the variant name is not already the primary name, or in the list of variants, if not, add it.
-    if ( ( component ) && ( variant_name?.length() ?: 0 > 0 ) ) {
-      boolean found = false
-      def variants = component.variantNames
-      if (variants) {
-        for (int i=0; !found && i<variants.size(); i++) {
-          found = variants[i].variantName == variant_name
-        }
-      }
-
-      if ( !found ) {
-        def new_variant_name = new KBComponentVariantName(variantName: variant_name, owner: component)
-        new_variant_name.save();
-      }
-    }
-    
-    result
+    component.ensureVariantName(variant_name)
   }
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
@@ -948,8 +930,10 @@ class IntegrationController {
         }
     
         title_changed |= setAllRefdata ([
-//          'status', 'editStatus',
-          'software', 'service'
+          'software', 'service',
+          'OAStatus', 'medium',
+          'pureOA', 'continuingSeries',
+          'reasonRetired'
         ], request.JSON, title)
         
         title_changed |= ClassUtils.setDateIfPresent(request.JSON.publishedFrom, title, 'publishedFrom', sdf)
@@ -1140,6 +1124,53 @@ class IntegrationController {
     }
   }
 
+  @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
+  def loadMacroList() {
+    
+    def cleanData = { String data ->
+      String d = data.trim()
+      d != '' && d != '\\N' ? d : null
+    }
+    
+    def title_file = request.getFile("macros")?.inputStream
+    char del = '\t'
+    char quote = '"'
+    def r = new CSVReader( new InputStreamReader(title_file, java.nio.charset.Charset.forName('UTF-8') ), del, quote )
+
+    def col_positions = [ 'id':0, 'name':1, 'desc':2, 'transformations':3 ]
+    String [] nl = r.readNext()
+
+    int rowctr = 0
+    def ret = [:]
+    while ( nl != null) {
+      rowctr ++
+      try {
+        if (nl.length >= col_positions.size() && cleanData (nl[col_positions.'name']) ) {
+          
+          String name = cleanData(nl[col_positions.'name'])
+          Macro m = Macro.findByNormname( Macro.generateNormname (name) ) ?: new Macro()
+          
+          // Update
+          m.name = name
+          m.description = cleanData (nl[col_positions.'desc'])
+          m.refineTransformations = cleanData (nl[col_positions.'transformations'])
+          
+          // Save to DB
+          m.save(flush: true, failOnError: true)
+          log.info "Created/Updated macro with id ${m.id}"
+          ret["Row ${rowctr}"] = "Created Macro with ID ${m.id}"
+        } else {
+          log.error("Unable to parse row ${rowctr}..")
+          ret["Row ${rowctr}"] = "Failed to parse"
+        } 
+      } catch ( Exception e ) {
+        log.error("Unable to process row ${rowctr}..",e)
+        ret["Row ${rowctr}"] = "Exception thrown ${e}"
+      }
+      nl = r.readNext()
+    }
+    render ret as JSON
+  }
 
   @Secured(['ROLE_API', 'IS_AUTHENTICATED_FULLY'])
   def loadTitleList() {
